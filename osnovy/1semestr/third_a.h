@@ -1,14 +1,14 @@
-#include <cstdio>
 #include <cmath>
+#include <cstdio>
 
-int main() {
+int third_a() {
     double a, b, x, y;
 
     printf("Enter x = ");
     scanf("%lf", &x);
 
     if (x == 4) {
-        printf("Function is not determined for x = 4");
+        printf("Function is not determined for x = 4\n");
         return 0;
     }
 
@@ -23,6 +23,6 @@ int main() {
         y = a*b*x;
     }
 
-    printf("Y = %f", y);
+    printf("Y = %.2lf\n", y);
     return 0;
 }
