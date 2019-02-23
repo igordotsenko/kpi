@@ -13,6 +13,8 @@ add_executable(5 osnovy/1semestr/fifth.cpp)
 add_executable(sort osnovy/1semestr/sort.cpp)
 add_executable(algo1 algo/algo_3.cpp)
 add_executable(os_1 os/first.c)
+add_executable(os_3 os/third.c)
+add_executable(pe os/pipe_example.c)
 
 
 #add_executable(6_test osnovy/1semestr/six_example.cpp)
