@@ -17,6 +17,8 @@ add_executable(os_3 os/third.c)
 add_executable(pe os/pipe_example.c)
 add_executable(os_4 os/os_4.c)
 add_executable(os_3.2 os/os_3_2.c)
+add_executable(os_2 os/os_2.c)
+add_executable(os_2_ex os/os_2_example.c)
 
 
 #add_executable(6_test osnovy/1semestr/six_example.cpp)
