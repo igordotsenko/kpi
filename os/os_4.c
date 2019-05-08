@@ -81,7 +81,7 @@ struct sockaddr_in* build_remote(char* ip, int port) {
 char* get_query(char* host, char* page) {
     char* query;
     char* page_to_retrieve = page;
-    char* template = "GET /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n";
+    char* template = "GET /%s HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n";
 
     if(page_to_retrieve[0] == '/') {
         page_to_retrieve = page_to_retrieve + 1;
