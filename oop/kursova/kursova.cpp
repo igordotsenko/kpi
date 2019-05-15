@@ -462,7 +462,7 @@ void clear() {
 
 
 void marina() {
-        setlocale(LC_ALL, "Russian");
+    setlocale(LC_ALL, "Russian");
     int key;
     int temp;
     ListQuart list;
@@ -560,17 +560,27 @@ void marina() {
  *
  */
 
-class InvalidParamException {
+class FigureOperationException {
 private:
     string message;
 
 public:
-    InvalidParamException(const string &message) : message(message) {}
+    FigureOperationException(const string &message) : message(message) {}
 
 public:
     const string &getMessage() const {
         return message;
     }
+};
+
+class InvalidParamException : public FigureOperationException {
+public:
+    InvalidParamException(const string &message) : FigureOperationException(message) {}
+};
+
+class ContainerIsFullException : public FigureOperationException {
+public:
+    ContainerIsFullException(const string &message) : FigureOperationException(message) {}
 };
 
 class Point { // клас Точка
@@ -823,10 +833,14 @@ class FiguresContainer {
 private:
     vector<Figure*> *figures;
     int currentSize = 0;
+    int maxSize;
 
 public:
-    FiguresContainer(const unsigned int initialSize) {
-        figures = new vector<Figure*>(initialSize);
+    FiguresContainer(const unsigned int size) {
+        figures = new vector<Figure*>(size);
+        // TODO remove
+        cout << "Created vector. Input size = " << size << "; vector size = " << figures -> size() << endl;
+        maxSize = size;
     }
 
     virtual ~FiguresContainer() {
@@ -835,7 +849,13 @@ public:
 
 
     void addFigure(Figure *figure) {
+        // TODO remove
+        if (currentSize == maxSize) {
+            throw ContainerIsFullException("Container is full and cannot accept new elements");
+        }
+        cout << "Current size is = " << currentSize << endl;
         (*figures)[currentSize] = figure;
+        cout << "Inserted figure. Vector size = " << figures->size() << endl;
         currentSize++;
     }
 
@@ -843,16 +863,18 @@ public:
         return currentSize;
     }
 
-    double getAverageSquare() {
-        double squareSum = 0;
+    template <class T>
+    T getAverageSquare() {
+        T squareSum = 0;
         for (int i = 0; i < currentSize; i++) {
             squareSum += figures->at(i)->getSquare();
         }
         return squareSum / currentSize;
     }
 
-    double getAverageX() {
-        double xSum = 0;
+    template <class T>
+    T getAverageX() {
+        T xSum = 0;
         for (int i = 0; i < currentSize; i++) {
             xSum += figures->at(i)->getCenter().getX();
         }
@@ -860,6 +882,7 @@ public:
     }
 
     Figure &operator[](unsigned long index) {
+        cout << "Figures size = " << figures->size() << "; index = " << index << endl;
         if (index > currentSize) {
             throw "Index is larger than number of existing figures";
         }
@@ -867,12 +890,75 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, FiguresContainer &container) {
+        // TODO remove
+        cout << "Start printing container" << endl;
         for (int i = 0; i < container.getSize(); i++) {
+            cout << "Printing element #" << i << endl;
             os << container[i] << endl;
         }
         return os;
     }
 };
+
+template <class T>
+T read_input() {
+    T input;
+    std::cin >> input;
+
+    while(std::cin.fail()) {
+        std::cin.clear();
+        std::cin.ignore(numeric_limits<streamsize>::max(),'\n');
+        std::cout << "Incorrect input type. Try again: ";
+        std::cin >> input;
+    }
+
+    return input;
+}
+
+Point* create_center() {
+    double x;
+    double y;
+
+    cout << "Enter Figure Center X: ";
+    x = read_input<double>();
+
+    cout << "Enter Figure Center Y: ";
+    y = read_input<double>();
+
+    return new Point(x, y);
+}
+
+string& create_name() {
+    string name;
+
+    cout << "Enter Figure Name: ";
+    cin >> name;
+
+    return name;
+}
+
+Round* create_round() {
+    while (true) {
+        try {
+            Point* center = create_center();
+            double radius;
+
+            cout << "Enter Round Radius: ";
+            radius = read_input<double>();
+
+            return new Round(*center, create_name(), radius);
+        } catch (InvalidParamException& e) {
+            cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        }
+    }
+}
+
+unsigned int number_of_rounds = 2;
+void add_rounds(FiguresContainer* figuresContainer) {
+    for (int i = 0; i < number_of_rounds; i++) {
+        figuresContainer->addFigure(create_round());
+    }
+}
 
 void dev_main() {
     Point *point = new Point(2, 1.5);
@@ -911,12 +997,20 @@ void dev_main() {
     cout << (*container)[1] << endl;
     cout << endl;
 
-    cout << "Average square " << endl;
-    cout << container->getAverageSquare() << endl;
+    cout << "Average square double " << endl;
+    cout << container->getAverageSquare<double>() << endl;
     cout << endl;
 
-    cout << "Average X " << endl;
-    cout << container->getAverageX() << endl;
+    cout << "Average square long " << endl;
+    cout << container->getAverageSquare<long>() << endl;
+    cout << endl;
+
+    cout << "Average X double" << endl;
+    cout << container->getAverageX<double>() << endl;
+    cout << endl;
+
+    cout << "Average X int" << endl;
+    cout << container->getAverageX<int>() << endl;
     cout << endl;
 
 
@@ -950,39 +1044,39 @@ void dev_main() {
     delete(container);
 }
 
-int main() {
-    dev_main();
-//    marina();
-
-
-
-//    setlocale(LC_ALL, "Russian");
-//    int key;
+void menu() {
+    setlocale(LC_ALL, "Russian");
+    int key;
 //    int temp;
 //    ListQuart list;
-//    // меню
-//    do {
-//        cout << " -----------------------------------" << endl;
-//        cout << "| Enter 1 to input data ->          |" << endl;
-//        cout << " -----------------------------------" << endl;
-//        cout << "| Enter 2 to output data ->         |" << endl;
-//        cout << " -----------------------------------" << endl;
-//        cout << "| Enter 3 to write data to file ->  |" << endl;
-//        cout << " -----------------------------------" << endl;
-//        cout << "| Enter 4 to read data from file -> |" << endl;
-//        cout << " -----------------------------------" << endl;
-//        cout << "| Enter 5 to search data ->         |" << endl;
-//        cout << " -----------------------------------" << endl;
-//        cout << "| Enter 0 to exit ->                |" << endl;
-//        cout << " -----------------------------------" << endl;
-//        cout << "Make your choice -> ";
-//        cin >> key;
-//        switch (key) {
-//            case 1:
-//                clear();
+    FiguresContainer* container = nullptr;
+    // меню
+    do {
+        cout << " -----------------------------------" << endl;
+        cout << "| Enter 1 to input data ->          |" << endl;
+        cout << " -----------------------------------" << endl;
+        cout << "| Enter 2 to output data ->         |" << endl;
+        cout << " -----------------------------------" << endl;
+        cout << "| Enter 3 to write data to file ->  |" << endl;
+        cout << " -----------------------------------" << endl;
+        cout << "| Enter 4 to read data from file -> |" << endl;
+        cout << " -----------------------------------" << endl;
+        cout << "| Enter 5 to search data ->         |" << endl;
+        cout << " -----------------------------------" << endl;
+        cout << "| Enter 0 to exit ->                |" << endl;
+        cout << " -----------------------------------" << endl;
+        cout << "Make your choice -> ";
+        key = read_input<int>();
+        switch (key) {
+            case 1:
+                clear();
+                container = new FiguresContainer(number_of_rounds);
+                add_rounds(container);
+                // TODO remove
+                cout << *container << endl;
 //                list.inputPerfomers(list);
-//                delay();
-//                break;
+                delay();
+                break;
 //            case 2:
 //                clear();
 //                list.show();
@@ -1033,14 +1127,24 @@ int main() {
 //                }
 //                delay();
 //                break;
-//            case 0:
-//                break;
-//            default:
-//                cout << "Repeat your choice: ";
-//                break;
-//        }
-//    } while (key != 0);
-//
-//    return 0;
+            case 0:
+                break;
+            default:
+                cout << "Repeat your choice: ";
+                break;
+        }
+    } while (key != 0);
+}
+
+int main() {
+    dev_main();
+//    marina();
+    menu();
+
+
+
+
+
+    return 0;
 
 }
