@@ -16,4 +16,6 @@ int main() {
 
     auto values = function->getAllValues();
     function->tab();
+
+    cout << function -> calculate_s2() << endl;
 }

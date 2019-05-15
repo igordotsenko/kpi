@@ -102,3 +102,23 @@ void Function::printTabLineSeparator(int cell_characters_total_count) {
         cout << "─";
     }
 }
+
+double Function::calculate_s2(vector<double> values) {
+    int negative_numbers_count = 0;
+    double negative_numbers_sum = 0;
+
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        auto value = *it;
+         if (value < 0) {
+             negative_numbers_count++;
+             negative_numbers_sum += value;
+         }
+    }
+
+    // TODO note: need to skip -inf value
+    return negative_numbers_count > 0 ? negative_numbers_sum / negative_numbers_count : 0;
+}
+
+double Function::calculate_s2() {
+    return calculate_s2(getAllValues());
+}
