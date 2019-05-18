@@ -156,8 +156,9 @@ public:
 };
 
 class Files { // клас Файл
-    string file = "text.txt";
-    string binFile = "binary.txt";
+    string file = "figures.txt";
+    string binFile = "figures.bin";
+
 public:
     void write(LibraryOfQuartets lib[]) { // запис даних у текстовий файл
         ofstream fout;
@@ -591,6 +592,8 @@ private: // приватні поля та методи
 public: // публічні поля та методи
     Point(double x, double y) : x(x), y(y) {}
 
+    Point() {}
+
     double getX() const {
         return x;
     }
@@ -631,11 +634,12 @@ protected:
 
     virtual void write_to_stream(ostream &os) const {
         os << "name: " << name << "; center: " << center << "; square = " << getSquare();
-//        return os;
     }
 
 public:
     Figure(const Point &center, const string &name) : center(center), name(name) {}
+
+    Figure() {}
 
     virtual double getSquare() const = 0;
 
@@ -667,10 +671,8 @@ private:
 
 protected:
     void write_to_stream(ostream &os) const override {
-//        os << static_cast<const Figure &>(*this) << " radius: " << radius;
         Figure::write_to_stream(os);
         os << " radius: " << radius;
-//        return os;
     }
 
 public:
@@ -678,6 +680,13 @@ public:
         validate_positive(radius, "radius");
         this->radius = radius;
     }
+
+    Round(Round& anotherRound) : Figure(anotherRound) {
+        this->radius = anotherRound.radius;
+        validate_positive(radius, "radius");
+    }
+
+    Round() : Figure() {}
 
     double getSquare() const override {
         return 3.14 * radius * radius;
@@ -692,10 +701,6 @@ public:
         Round::radius = radius;
     }
 
-//    friend ostream &operator<<(ostream &os, const Round &round) {
-//        os << static_cast<const Figure &>(round) << " radius: " << round.radius;
-//        return os;
-//    }
     friend ostream &operator<<(ostream &os, const Round &figure) {
         figure.write_to_stream(os);
         return os;
@@ -723,6 +728,14 @@ protected:
 public:
     Triangle(const Point &a, const Point &b, const Point &c, const string &name) :
         Figure(compute_center(a, b,c), name), a(a), b(b), c(c) {}
+
+    Triangle() {}
+
+    Triangle(Triangle& anotherTriangle) : Figure(anotherTriangle) {
+            this->a = anotherTriangle.a;
+            this->b = anotherTriangle.b;
+            this->c = anotherTriangle.c;
+    }
 
     double getSquare() const override {
         double determinant = (
@@ -760,9 +773,6 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Triangle &triangle) {
-//        os << static_cast<const Figure &>(triangle) << "; a: " << triangle.a << "; b: " << triangle.b << "; c: "
-//           << triangle.c;
-//        return os;
         triangle.write_to_stream(os);
         return os;
     }
@@ -785,6 +795,15 @@ public:
         validate_positive(b_length, "Rectangle side length");
         this->a_length = a_length;
         this->b_length = b_length;
+    }
+
+    Rectangle() {}
+
+    Rectangle(Rectangle& anotherRectangle) : Figure(anotherRectangle) {
+        validate_positive(anotherRectangle.a_length, "Rectangle side length");
+        validate_positive(anotherRectangle.b_length, "Rectangle side length");
+        this->a_length = anotherRectangle.a_length;
+        this->b_length = anotherRectangle.b_length;
     }
 
     double getSquare() const override {
@@ -832,6 +851,15 @@ public:
         validate_positive(radius_2, "radius");
         this->radius_1 = radius_1;
         this->radius_2 = radius_2;
+    }
+
+    Ellipse() {}
+
+    Ellipse(Ellipse& anotherEllipse) : Figure(anotherEllipse) {
+        this->radius_1 = anotherEllipse.radius_1;
+        this->radius_2 = anotherEllipse.radius_2;
+        validate_positive(radius_1, "radius");
+        validate_positive(radius_2, "radius");
     }
 
     double getSquare() const override {
@@ -882,13 +910,10 @@ public:
 
 
     void addFigure(Figure *figure) {
-        // TODO remove
         if (currentSize == maxSize) {
             throw ContainerIsFullException("Container is full and cannot accept new elements");
         }
-//        cout << "Current size is = " << currentSize << endl;
         (*figures)[currentSize] = figure;
-//        cout << "Inserted figure. Vector size = " << figures->size() << endl;
         currentSize++;
     }
 
@@ -915,8 +940,6 @@ public:
     }
 
     Figure &operator[](unsigned long index) {
-        // TODO remove
-//        cout << "Figures size = " << figures->size() << "; index = " << index << endl;
         if (index > currentSize) {
             throw "Index is larger than number of existing figures";
         }
@@ -924,12 +947,7 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, FiguresContainer &container) {
-        // TODO remove
-//        cout << "Start printing container" << endl;
         for (int i = 0; i < container.getSize(); i++) {
-//            cout << "Printing element #" << i << endl;
-            // TODO short
-//            Figure& figure = container[i];
             os << container[i] << endl;
         }
         return os;
@@ -1047,11 +1065,237 @@ Ellipse* create_ellipse() {
     }
 }
 
-unsigned int number_of_rounds = 1;
+unsigned int number_of_rounds = 2;
 unsigned int number_of_triangles = 1;
-unsigned int number_of_rectangles = 1;
+unsigned int number_of_rectangles = 2;
 unsigned int number_of_ellipses = 1;
 unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
+
+class FileHandler {
+    string file = "/tmp/figures.txt";
+    string binFile = "/tmp/figures.bin";
+
+private:
+    // Write Operations
+    // TODO move to classes
+    void write_point(ofstream& fout, const Point& point) {
+        fout << point.getX() << endl;
+        fout << point.getY() << endl;
+    }
+
+    void write_round(ofstream& fout, Round& round) {
+        fout << round.getName() << endl;
+        write_point(fout, round.getCenter());
+        fout << round.getRadius() << endl;
+    }
+
+    void write_triangle(ofstream& fout, Triangle& triangle) {
+        fout << triangle.getName() << endl;
+        write_point(fout, triangle.getA());
+        write_point(fout, triangle.getB());
+        write_point(fout, triangle.getC());
+    }
+
+    void write_rectangle(ofstream& fout, Rectangle& rectangle) {
+        fout << rectangle.getName() << endl;
+        write_point(fout, rectangle.getCenter());
+        fout << rectangle.getA_length() << endl;
+        fout << rectangle.getB_length() << endl;
+    }
+
+    void write_ellipse(ofstream& fout, Ellipse& ellipse) {
+        fout << ellipse.getName() << endl;
+        write_point(fout, ellipse.getCenter());
+        fout << ellipse.getRadius_1() << endl;
+        fout << ellipse.getRadius_2() << endl;
+    }
+
+    // Read operations
+    // TODO maybe should return reference here?
+    Point read_point(ifstream& fin) {
+        double x;
+        double y;
+
+        fin >> x;
+        fin >> y;
+
+        return {x, y};
+    }
+
+    Round* read_round(ifstream& fin) {
+        string name;
+        double radius;
+
+        fin >> name;
+        Point center = read_point(fin);
+        fin >> radius;
+
+        return new Round(center, name, radius);
+    }
+
+    Triangle* read_triangle(ifstream& fin) {
+        string name;
+        fin >> name;
+
+        Point a = read_point(fin);
+        Point b = read_point(fin);
+        Point c = read_point(fin);
+
+        return new Triangle(a, b, c, name);
+    }
+
+    Rectangle* read_rectangle(ifstream& fin) {
+        string name;
+        fin >> name;
+
+        Point center = read_point(fin);
+
+        double a_len;
+        fin >> a_len;
+
+        double b_len;
+        fin >> b_len;
+
+        return new Rectangle(center, name, a_len, b_len);
+    }
+
+    Ellipse* read_ellipse(ifstream& fin) {
+        string name;
+        fin >> name;
+
+        Point center = read_point(fin);
+
+        double rad_1;
+        fin >> rad_1;
+
+        double rad_2;
+        fin >> rad_2;
+
+        return new Ellipse(center, name, rad_1, rad_2);
+    }
+
+
+public:
+    void write_txt(FiguresContainer &container) { // запис даних у текстовий файл
+        ofstream fout;
+        try {
+            fout.open(file);
+            if (!fout) {
+                // TODO handle
+                throw "File cannot be opened.";
+            }
+
+            // TODO move to write methods to classes
+            int current_index = 0;
+            for (int i = 0; i < number_of_rounds; i++) {
+                write_round(fout, dynamic_cast<Round&>(container[current_index++]));
+            }
+
+            for (int i = 0; i < number_of_triangles; i++) {
+                write_triangle(fout, dynamic_cast<Triangle&>(container[current_index++]));
+            }
+
+            for (int i = 0; i < number_of_rectangles; i++) {
+                write_rectangle(fout, dynamic_cast<Rectangle&>(container[current_index++]));
+            }
+
+            for (int i = 0; i < number_of_ellipses; i++) {
+                write_ellipse(fout, dynamic_cast<Ellipse&>(container[current_index++]));
+            }
+
+            fout.close();
+        } catch (char err) { // обробка виключних ситуацій
+            cout << err << endl;
+        }
+    }
+
+    void write_bin(FiguresContainer &container) { // запис даних у бінарний файл
+        ofstream fout;
+        try
+        {
+            fout.open(binFile, ios::binary | ios::out);
+            if (!fout) {
+                throw "File cannot be opened.";
+            }
+            int index = 0;
+            for (int i = 0; i < number_of_rounds; i++) {
+                fout.write((char*)&container[index++], sizeof(Round));
+            }
+            for (int i = 0; i < number_of_triangles; i++) {
+                fout.write((char*)&container[index++], sizeof(Triangle));
+            }
+            for (int i = 0; i < number_of_rectangles; i++) {
+                fout.write((char*)&container[index++], sizeof(Rectangle));
+            }
+            for (int i = 0; i < number_of_ellipses; i++) {
+                fout.write((char*)&container[index++], sizeof(Ellipse));
+            }
+
+            fout.close();
+        }
+        catch (char err) { // обробка виключних ситуацій
+            cout << err << endl;
+        }
+    }
+
+    void read_bin(FiguresContainer &container) { // зчитування даних з бінарного файлу
+        ifstream fin;
+
+        try
+        {
+            fin.open(binFile, ios::binary | ios::in);
+            if (!fin) {
+                throw "File cannot be opened.";
+            }
+            read_bin_object<Round>(fin, number_of_rounds, container);
+            read_bin_object<Triangle>(fin, number_of_triangles, container);
+            read_bin_object<Rectangle>(fin, number_of_rectangles, container);
+            read_bin_object<Ellipse>(fin, number_of_ellipses, container);
+
+
+            fin.close();
+        } catch (char err) { // обробка виключних ситуацій
+            cout << err << endl;
+        }
+    }
+
+    template <class T>
+    void read_bin_object(ifstream &fin, int numberOfFigures, FiguresContainer &container) {
+        for (int i = 0; i < numberOfFigures; i++) {
+            T tmp;
+            fin.read((char*) &tmp, sizeof(T));
+            auto f = new T(tmp);
+            container.addFigure(f);
+        }
+    }
+
+    FiguresContainer* read_txt() { // зчитування даних з текстового файлу
+        ifstream fin;
+        try {
+            fin.open(file);
+            if (!fin) {
+                throw "File cannot be opened.";
+            }
+        } catch (char err) { // обробка виключних ситуацій
+            cout << err << endl;
+        }
+        auto * container = new FiguresContainer(total_number_of_figures);
+        for (int i = 0; i < number_of_rounds; i++) {
+            container->addFigure(read_round(fin));
+        }
+        for (int i = 0; i < number_of_triangles; i++) {
+            container->addFigure(read_triangle(fin));
+        }
+        for (int i = 0; i < number_of_rectangles; i++) {
+            container->addFigure(read_rectangle(fin));
+        }
+        for (int i = 0; i < number_of_ellipses; i++) {
+            container->addFigure(read_ellipse(fin));
+        }
+
+        return container;
+    }
+};
 
 void add_rounds(FiguresContainer* figuresContainer) {
     for (int i = 0; i < number_of_rounds; i++) {
@@ -1066,7 +1310,7 @@ void add_triangles(FiguresContainer* figuresContainer) {
 }
 
 void add_rectangles(FiguresContainer* figuresContainer) {
-    for (int i = 0; i < number_of_triangles; i++) {
+    for (int i = 0; i < number_of_rectangles; i++) {
         figuresContainer->addFigure(create_rectangle());
     }
 }
@@ -1081,15 +1325,15 @@ void dev_main() {
     Point *point = new Point(2, 1.5);
     Round *round = new Round(*point, "my round", 2.5);
 
-    Point *a = new Point(40, 20);
-    Point *b = new Point(60, 40);
-    Point *c = new Point(80, 20);
+    auto a = new Point(40, 20);
+    auto b = new Point(60, 40);
+    auto c = new Point(80, 20);
     Triangle *triangle = new Triangle(*a, *b, *c, "my triangle");
 
     Rectangle *rectangle = new Rectangle(*point, "my rectangle", 4, 2.5);
     Ellipse *ellipse = new Ellipse(*point, "my ellipse", 4, 2.5);
 
-    FiguresContainer* container = new FiguresContainer(4);
+    auto * container = new FiguresContainer(4);
     container->addFigure(round);
     container->addFigure(triangle);
     container->addFigure(rectangle);
@@ -1164,9 +1408,10 @@ void dev_main() {
 void menu() {
     setlocale(LC_ALL, "Russian");
     int key;
-//    int temp;
+    int file_format;
 //    ListQuart list;
     FiguresContainer* container = nullptr;
+    FileHandler fileHandler = FileHandler();
     // меню
     do {
         cout << " -----------------------------------" << endl;
@@ -1192,11 +1437,10 @@ void menu() {
                 add_triangles(container);
                 add_rectangles(container);
                 add_ellipses(container);
-
-//                list.inputPerfomers(list);
                 delay();
                 break;
             case 2:
+                // TODO table
                 clear();
                 cout << "All figures:" << endl;
                 cout << *container << endl;
@@ -1204,35 +1448,46 @@ void menu() {
                 cout << "Average square int = :" << container->getAverageSquare<int>() << endl;
                 cout << "Average X double = :" << container->getAverageX<double>() << endl;
                 cout << "Average X int = :" << container->getAverageX<int>() << endl;
-
                 delay();
                 break;
-//            case 3:
-//                clear();
-//                cout << "Enter 1 to write data in txt file: " << endl;
-//                cout << "Enter 2 to write data in binary txt file: " << endl;
-//                cin >> temp;
-//                if (temp == 1) {
-//                    list.file.write(list.lib);
-//                }
-//                else {
-//                    list.file.writeBin(list.lib);
-//                }
-//                delay();
-//                break;
-//            case 4:
-//                clear();
-//                cout << "Enter 1 to read data from txt file: " << endl;
-//                cout << "Enter 2 to read data from binary txt file: " << endl;
-//                cin >> temp;
-//                if (temp == 1) {
-//                    list.file.read(list.lib);
-//                }
-//                else {
-//                    list.file.readBin(list.lib);
-//                }
-//                delay();
-//                break;
+            case 3:
+                clear();
+                cout << "Enter 1 to write data in txt file: " << endl;
+                cout << "Enter 2 to write data in binary txt file: " << endl;
+                file_format = read_input<int>();
+                try {
+                    if (file_format == 1) {
+                        fileHandler.write_txt(*container);
+                    } else {
+                        fileHandler.write_bin(*container);
+                    }
+                } catch (FigureOperationException& e) {
+                    cout << e.getMessage() << endl;
+                } catch (char const* e) {
+                    cout << e << endl;
+                }
+                delay();
+                break;
+            case 4:
+                clear();
+                cout << "Enter 1 to read data from txt file: " << endl;
+                cout << "Enter 2 to read data from binary txt file: " << endl;
+                cin >> file_format;
+                try {
+                    if (file_format == 1) {
+                        container = fileHandler.read_txt();
+                    } else {
+                        delete container;
+                        container = new FiguresContainer(total_number_of_figures);
+                        fileHandler.read_bin(*container);
+                    }
+                } catch (FigureOperationException& e) {
+                    cout << e.getMessage() << endl;
+                } catch (char const* e) {
+                    cout << e << endl;
+                }
+                delay();
+                break;
 //            case 5:
 //                clear();
 //                cout << "Enter 1 to search for performance time: " << endl;
@@ -1259,6 +1514,8 @@ void menu() {
                 break;
         }
     } while (key != 0);
+
+    delete container;
 }
 
 int main() {
