@@ -629,6 +629,11 @@ protected:
         }
     }
 
+    virtual void write_to_stream(ostream &os) const {
+        os << "name: " << name << "; center: " << center << "; square = " << getSquare();
+//        return os;
+    }
+
 public:
     Figure(const Point &center, const string &name) : center(center), name(name) {}
 
@@ -651,7 +656,7 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Figure &figure) {
-        os << "name: " << figure.name << "; center: " << figure.center << "; square = " << figure.getSquare();
+        figure.write_to_stream(os);
         return os;
     }
 };
@@ -659,6 +664,14 @@ public:
 class Round : public Figure { // успадкування
 private:
     double radius;
+
+protected:
+    void write_to_stream(ostream &os) const override {
+//        os << static_cast<const Figure &>(*this) << " radius: " << radius;
+        Figure::write_to_stream(os);
+        os << " radius: " << radius;
+//        return os;
+    }
 
 public:
     Round(const Point &center, const string &name, double radius) : Figure(center, name) {
@@ -679,8 +692,12 @@ public:
         Round::radius = radius;
     }
 
-    friend ostream &operator<<(ostream &os, const Round &round) {
-        os << static_cast<const Figure &>(round) << " radius: " << round.radius;
+//    friend ostream &operator<<(ostream &os, const Round &round) {
+//        os << static_cast<const Figure &>(round) << " radius: " << round.radius;
+//        return os;
+//    }
+    friend ostream &operator<<(ostream &os, const Round &figure) {
+        figure.write_to_stream(os);
         return os;
     }
 };
@@ -697,6 +714,11 @@ private:
         return * new Point(x_center, y_center);
     }
 
+protected:
+    void write_to_stream(ostream &os) const override {
+        Figure::write_to_stream(os);
+        os << "; a: " << a << "; b: " << b << "; c: " << c;
+    }
 
 public:
     Triangle(const Point &a, const Point &b, const Point &c, const string &name) :
@@ -738,8 +760,10 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Triangle &triangle) {
-        os << static_cast<const Figure &>(triangle) << "; a: " << triangle.a << "; b: " << triangle.b << "; c: "
-           << triangle.c;
+//        os << static_cast<const Figure &>(triangle) << "; a: " << triangle.a << "; b: " << triangle.b << "; c: "
+//           << triangle.c;
+//        return os;
+        triangle.write_to_stream(os);
         return os;
     }
 };
@@ -747,6 +771,12 @@ public:
 class Rectangle : public Figure {
     double a_length;
     double b_length;
+
+protected:
+    void write_to_stream(ostream &os) const override {
+        Figure::write_to_stream(os);
+        os << " A side length: " << a_length << "; B side length: " << b_length << ";";
+    }
 
 public:
     Rectangle(const Point &center, const string &name, double a_length, double b_length) :
@@ -780,9 +810,7 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Rectangle &rectangle) {
-        // TODO note: why do we do static_cast here?
-        os << static_cast<const Figure &>(rectangle) << " A side length: " << rectangle.a_length << "; B side length: "
-           << rectangle.b_length << ";";
+        rectangle.write_to_stream(os);
         return os;
     }
 };
@@ -790,6 +818,12 @@ public:
 class Ellipse : public Figure {
     double radius_1;
     double radius_2;
+
+protected:
+    void write_to_stream(ostream &os) const override {
+        Figure::write_to_stream(os);
+        os << " radius_1: " << radius_1 << "; radius_2: " << radius_2;
+    }
 
 public:
     Ellipse(const Point &center, const string &name, double radius_1, double radius_2) :
@@ -823,8 +857,7 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Ellipse &ellipse) {
-        os << static_cast<const Figure &>(ellipse) << " radius_1: " << ellipse.radius_1 << "; radius_2: "
-           << ellipse.radius_2;
+        ellipse.write_to_stream(os);
         return os;
     }
 };
@@ -853,9 +886,9 @@ public:
         if (currentSize == maxSize) {
             throw ContainerIsFullException("Container is full and cannot accept new elements");
         }
-        cout << "Current size is = " << currentSize << endl;
+//        cout << "Current size is = " << currentSize << endl;
         (*figures)[currentSize] = figure;
-        cout << "Inserted figure. Vector size = " << figures->size() << endl;
+//        cout << "Inserted figure. Vector size = " << figures->size() << endl;
         currentSize++;
     }
 
@@ -882,7 +915,8 @@ public:
     }
 
     Figure &operator[](unsigned long index) {
-        cout << "Figures size = " << figures->size() << "; index = " << index << endl;
+        // TODO remove
+//        cout << "Figures size = " << figures->size() << "; index = " << index << endl;
         if (index > currentSize) {
             throw "Index is larger than number of existing figures";
         }
@@ -891,9 +925,11 @@ public:
 
     friend ostream &operator<<(ostream &os, FiguresContainer &container) {
         // TODO remove
-        cout << "Start printing container" << endl;
+//        cout << "Start printing container" << endl;
         for (int i = 0; i < container.getSize(); i++) {
-            cout << "Printing element #" << i << endl;
+//            cout << "Printing element #" << i << endl;
+            // TODO short
+//            Figure& figure = container[i];
             os << container[i] << endl;
         }
         return os;
@@ -915,20 +951,20 @@ T read_input() {
     return input;
 }
 
-Point* create_center() {
+Point* create_point() {
     double x;
     double y;
 
-    cout << "Enter Figure Center X: ";
+    cout << "Enter X: ";
     x = read_input<double>();
 
-    cout << "Enter Figure Center Y: ";
+    cout << "Enter Y: ";
     y = read_input<double>();
 
     return new Point(x, y);
 }
 
-string& create_name() {
+const string create_name() {
     string name;
 
     cout << "Enter Figure Name: ";
@@ -940,7 +976,8 @@ string& create_name() {
 Round* create_round() {
     while (true) {
         try {
-            Point* center = create_center();
+            cout << "Enter Round center coordinates:" << endl;
+            Point* center = create_point();
             double radius;
 
             cout << "Enter Round Radius: ";
@@ -953,10 +990,90 @@ Round* create_round() {
     }
 }
 
-unsigned int number_of_rounds = 2;
+Triangle* create_triangle() {
+    while (true) {
+        try {
+            cout << "Enter Triangle Vertex A coordinates:" << endl;
+            Point* a = create_point();
+
+            cout << "Enter Triangle Vertex B coordinates:" << endl;
+            Point* b = create_point();
+
+            cout << "Enter Triangle Vertex C coordinates:" << endl;
+            Point* c = create_point();
+
+            return new Triangle(*a, *b, *c, create_name());
+        } catch (InvalidParamException& e) {
+            cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        }
+    }
+}
+
+Rectangle* create_rectangle() {
+    while (true) {
+        try {
+            cout << "Enter Rectangle Center coordinates:" << endl;
+            Point* center = create_point();
+
+            cout << "Enter Rectangle side A length:" << endl;
+            double length_a = read_input<double>();
+
+            cout << "Enter Rectangle side B length:" << endl;
+            double length_b = read_input<double>();
+
+            return new Rectangle(*center, create_name(), length_a, length_b);
+        } catch (InvalidParamException& e) {
+            cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        }
+    }
+}
+
+Ellipse* create_ellipse() {
+    while (true) {
+        try {
+            cout << "Enter Ellipse Center coordinates:" << endl;
+            Point* center = create_point();
+
+            cout << "Enter Ellipse Radius 1:" << endl;
+            double radius_1 = read_input<double>();
+
+            cout << "Enter Ellipse Radius 2:" << endl;
+            double radius_2 = read_input<double>();
+
+            return new Ellipse(*center, create_name(), radius_1, radius_2);
+        } catch (InvalidParamException& e) {
+            cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        }
+    }
+}
+
+unsigned int number_of_rounds = 1;
+unsigned int number_of_triangles = 1;
+unsigned int number_of_rectangles = 1;
+unsigned int number_of_ellipses = 1;
+unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
+
 void add_rounds(FiguresContainer* figuresContainer) {
     for (int i = 0; i < number_of_rounds; i++) {
         figuresContainer->addFigure(create_round());
+    }
+}
+
+void add_triangles(FiguresContainer* figuresContainer) {
+    for (int i = 0; i < number_of_triangles; i++) {
+        figuresContainer->addFigure(create_triangle());
+    }
+}
+
+void add_rectangles(FiguresContainer* figuresContainer) {
+    for (int i = 0; i < number_of_triangles; i++) {
+        figuresContainer->addFigure(create_rectangle());
+    }
+}
+
+void add_ellipses(FiguresContainer* figuresContainer) {
+    for (int i = 0; i < number_of_triangles; i++) {
+        figuresContainer->addFigure(create_ellipse());
     }
 }
 
@@ -1070,18 +1187,26 @@ void menu() {
         switch (key) {
             case 1:
                 clear();
-                container = new FiguresContainer(number_of_rounds);
+                container = new FiguresContainer(total_number_of_figures);
                 add_rounds(container);
-                // TODO remove
-                cout << *container << endl;
+                add_triangles(container);
+                add_rectangles(container);
+                add_ellipses(container);
+
 //                list.inputPerfomers(list);
                 delay();
                 break;
-//            case 2:
-//                clear();
-//                list.show();
-//                delay();
-//                break;
+            case 2:
+                clear();
+                cout << "All figures:" << endl;
+                cout << *container << endl;
+                cout << "Average square double = :" << container->getAverageSquare<double>() << endl;
+                cout << "Average square int = :" << container->getAverageSquare<int>() << endl;
+                cout << "Average X double = :" << container->getAverageX<double>() << endl;
+                cout << "Average X int = :" << container->getAverageX<int>() << endl;
+
+                delay();
+                break;
 //            case 3:
 //                clear();
 //                cout << "Enter 1 to write data in txt file: " << endl;
@@ -1137,7 +1262,7 @@ void menu() {
 }
 
 int main() {
-    dev_main();
+//    dev_main();
 //    marina();
     menu();
 
