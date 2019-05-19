@@ -594,6 +594,10 @@ public: // публічні поля та методи
 
     Point() {}
 
+    bool contains_value(double value) {
+        return x == value || y == value;
+    }
+
     double getX() const {
         return x;
     }
@@ -640,6 +644,14 @@ public:
     Figure(const Point &center, const string &name) : center(center), name(name) {}
 
     Figure() {}
+
+    virtual bool contains_value(double value) {
+        return center.contains_value(value) || getSquare() == value;
+    }
+
+    virtual bool contains_string(const string str) {
+        return name.find(str) != std::string::npos;
+    }
 
     virtual double getSquare() const = 0;
 
@@ -688,6 +700,10 @@ public:
 
     Round() : Figure() {}
 
+    bool contains_value(double value) override {
+        return Figure::contains_value(value) || radius == value;
+    }
+
     double getSquare() const override {
         return 3.14 * radius * radius;
     }
@@ -735,6 +751,11 @@ public:
             this->a = anotherTriangle.a;
             this->b = anotherTriangle.b;
             this->c = anotherTriangle.c;
+    }
+
+    bool contains_value(double value) override {
+        return Figure::contains_value(value) || a.contains_value(value)
+        || b.contains_value(value) || c.contains_value(value);
     }
 
     double getSquare() const override {
@@ -806,6 +827,10 @@ public:
         this->b_length = anotherRectangle.b_length;
     }
 
+    bool contains_value(double value) override {
+        return Figure::contains_value(value) || a_length == value || b_length == value;
+    }
+
     double getSquare() const override {
         return a_length * b_length;
     }
@@ -862,6 +887,10 @@ public:
         validate_positive(radius_2, "radius");
     }
 
+    virtual bool contains_value(double value) {
+        return Figure::contains_value(value) || radius_1 == value || radius_2 == value;
+    }
+
     double getSquare() const override {
         return 3.14 * radius_1 * radius_2;
     }
@@ -890,6 +919,13 @@ public:
     }
 };
 
+// Move to FiguresContainer?
+unsigned int number_of_rounds = 2;
+unsigned int number_of_triangles = 1;
+unsigned int number_of_rectangles = 2;
+unsigned int number_of_ellipses = 1;
+unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
+
 class FiguresContainer {
 private:
     vector<Figure*> *figures;
@@ -898,6 +934,7 @@ private:
 
 public:
     FiguresContainer(const unsigned int size) {
+        // TODO use reserve isntead of passing to constructor
         figures = new vector<Figure*>(size);
         // TODO remove
         cout << "Created vector. Input size = " << size << "; vector size = " << figures -> size() << endl;
@@ -937,6 +974,47 @@ public:
             xSum += figures->at(i)->getCenter().getX();
         }
         return xSum / currentSize;
+    }
+
+    // TODO try to implement
+//    template <class T>
+//    const vector<Figure*> *find_by_value(T value, bool (*search_function)(T)) {
+//        auto found = new vector<Figure*>();
+//        found->reserve(total_number_of_figures);
+//
+//        for (int i = 0; i < currentSize; i++) {
+//            Figure* figure = (*figures)[i];
+//            if (search_function(value)) {
+//                found->push_back(figure);
+//            }
+//        }
+//        return found;
+//    }
+
+    const vector<Figure*> *find_by_value(double value) {
+        auto found = new vector<Figure*>();
+        found->reserve(total_number_of_figures);
+
+        for (int i = 0; i < currentSize; i++) {
+            Figure* figure = (*figures)[i];
+            if (figure -> contains_value(value)) {
+                found->push_back(figure);
+            }
+        }
+        return found;
+    }
+
+    const vector<Figure*> *find_by_value(const string &value) {
+        auto found = new vector<Figure*>();
+        found->reserve(total_number_of_figures);
+
+        for (int i = 0; i < currentSize; i++) {
+            Figure* figure = (*figures)[i];
+            if (figure -> contains_string(value)) {
+                found->push_back(figure);
+            }
+        }
+        return found;
     }
 
     Figure &operator[](unsigned long index) {
@@ -1064,12 +1142,6 @@ Ellipse* create_ellipse() {
         }
     }
 }
-
-unsigned int number_of_rounds = 2;
-unsigned int number_of_triangles = 1;
-unsigned int number_of_rectangles = 2;
-unsigned int number_of_ellipses = 1;
-unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
 
 class FileHandler {
     string file = "/tmp/figures.txt";
@@ -1238,25 +1310,28 @@ public:
         }
     }
 
-    void read_bin(FiguresContainer &container) { // зчитування даних з бінарного файлу
+    FiguresContainer* read_bin() { // зчитування даних з бінарного файлу
         ifstream fin;
+        FiguresContainer* container;
 
-        try
-        {
+        try {
             fin.open(binFile, ios::binary | ios::in);
             if (!fin) {
                 throw "File cannot be opened.";
             }
-            read_bin_object<Round>(fin, number_of_rounds, container);
-            read_bin_object<Triangle>(fin, number_of_triangles, container);
-            read_bin_object<Rectangle>(fin, number_of_rectangles, container);
-            read_bin_object<Ellipse>(fin, number_of_ellipses, container);
-
+            container = new FiguresContainer(total_number_of_figures);
+            read_bin_object<Round>(fin, number_of_rounds, *container);
+            read_bin_object<Triangle>(fin, number_of_triangles, *container);
+            read_bin_object<Rectangle>(fin, number_of_rectangles, *container);
+            read_bin_object<Ellipse>(fin, number_of_ellipses, *container);
 
             fin.close();
         } catch (char err) { // обробка виключних ситуацій
             cout << err << endl;
+            return nullptr;
         }
+
+        return container;
     }
 
     template <class T>
@@ -1405,13 +1480,74 @@ void dev_main() {
     delete(container);
 }
 
+template <class T>
+void find_and_print(FiguresContainer* container) {
+    T value;
+    cout << "Enter value: ";
+    value = read_input<T>();
+    auto found = container->find_by_value(value);
+    cout << "Found " << found->size() << " figures:" << endl;
+    for (auto found_figure : *found) {
+        cout << *found_figure << endl;
+    }
+    delete(found);
+}
+
+void write(FileHandler& fileHandler, FiguresContainer& container) {
+    cout << "Enter 1 to write data in txt file: " << endl;
+    cout << "Enter 2 to write data in binary txt file: " << endl;
+    int file_format = read_input<int>();
+    try {
+        if (file_format == 1) {
+            fileHandler.write_txt(container);
+        } else {
+            fileHandler.write_bin(container);
+        }
+    } catch (FigureOperationException& e) {
+        cout << e.getMessage() << endl;
+    } catch (char const* e) {
+        cout << e << endl;
+    }
+}
+
+FiguresContainer* read(FileHandler& fileHandler, FiguresContainer* existingContainer) {
+    cout << "Enter 1 to read data from txt file: " << endl;
+    cout << "Enter 2 to read data from binary txt file: " << endl;
+    int file_format = read_input<int>();
+    FiguresContainer* newContainer = nullptr;
+    try {
+        if (file_format == 1) {
+            newContainer = fileHandler.read_txt();
+        } else {
+            newContainer = fileHandler.read_bin();
+        }
+        delete existingContainer;
+    } catch (FigureOperationException& e) {
+        cout << e.getMessage() << endl;
+    } catch (char const* e) {
+        cout << e << endl;
+    }
+
+    return newContainer == nullptr ? existingContainer : newContainer;
+}
+
+void search(FiguresContainer* container) {
+    cout << "Enter 1 to search by number: " << endl;
+    cout << "Enter 2 to search for string: " << endl;
+    int key = read_input<int>();
+    if (key == 1) {
+        find_and_print<double>(container);
+    } else {
+        find_and_print<string>(container);
+    }
+}
+
 void menu() {
     setlocale(LC_ALL, "Russian");
     int key;
-    int file_format;
-//    ListQuart list;
     FiguresContainer* container = nullptr;
     FileHandler fileHandler = FileHandler();
+
     // меню
     do {
         cout << " -----------------------------------" << endl;
@@ -1442,6 +1578,10 @@ void menu() {
             case 2:
                 // TODO table
                 clear();
+                if (container == nullptr) {
+                    cout << "No figures created yet" << endl;
+                    break;
+                }
                 cout << "All figures:" << endl;
                 cout << *container << endl;
                 cout << "Average square double = :" << container->getAverageSquare<double>() << endl;
@@ -1452,61 +1592,27 @@ void menu() {
                 break;
             case 3:
                 clear();
-                cout << "Enter 1 to write data in txt file: " << endl;
-                cout << "Enter 2 to write data in binary txt file: " << endl;
-                file_format = read_input<int>();
-                try {
-                    if (file_format == 1) {
-                        fileHandler.write_txt(*container);
-                    } else {
-                        fileHandler.write_bin(*container);
-                    }
-                } catch (FigureOperationException& e) {
-                    cout << e.getMessage() << endl;
-                } catch (char const* e) {
-                    cout << e << endl;
+                if (container == nullptr) {
+                    cout << "No figures created yet" << endl;
+                    break;
                 }
+                write(fileHandler, *container);
                 delay();
                 break;
             case 4:
                 clear();
-                cout << "Enter 1 to read data from txt file: " << endl;
-                cout << "Enter 2 to read data from binary txt file: " << endl;
-                cin >> file_format;
-                try {
-                    if (file_format == 1) {
-                        container = fileHandler.read_txt();
-                    } else {
-                        delete container;
-                        container = new FiguresContainer(total_number_of_figures);
-                        fileHandler.read_bin(*container);
-                    }
-                } catch (FigureOperationException& e) {
-                    cout << e.getMessage() << endl;
-                } catch (char const* e) {
-                    cout << e << endl;
-                }
+                container = read(fileHandler, container);
                 delay();
                 break;
-//            case 5:
-//                clear();
-//                cout << "Enter 1 to search for performance time: " << endl;
-//                cout << "Enter 2 to search for opus: " << endl;
-//                cin >> temp;
-//                if (temp == 1) {
-//                    int time;
-//                    cout << "Enter time: ";
-//                    cin >> time;
-//                    list.search(time);
-//                }
-//                else {
-//                    string opus;
-//                    cout << "Enter opus: ";
-//                    cin >> opus;
-//                    list.search(opus);
-//                }
-//                delay();
-//                break;
+            case 5:
+                clear();
+                if (container == nullptr) {
+                    cout << "No figures created yet" << endl;
+                    break;
+                }
+                search(container);
+                delay();
+                break;
             case 0:
                 break;
             default:

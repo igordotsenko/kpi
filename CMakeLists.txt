@@ -19,7 +19,8 @@ add_executable(os_3.2 os/os_3_2.c)
 add_executable(os_2 os/os_2.c)
 # Note: when running some main function, need to specify here all classes should be linked (?)
 add_executable(oop oop/oop.cpp oop/1/Function.cpp)
-add_executable(oop_kursova oop/kursova/marina.cpp oop/kursova/kursova.cpp)
+add_executable(oop_kursova oop/kursova/marina.cpp oop/kursova/kursova.cpp )
+add_executable(oop_test oop/kursova/test.cpp)
 
 
 #add_executable(6_test osnovy/1semestr/six_example.cpp)
