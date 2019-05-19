@@ -6,563 +6,6 @@
 
 using namespace std;
 
-class Date { // клас Дата
-private: // приватні методи
-    string day;
-    string month;
-    string year;
-public: // публічні методи
-    void setDay(string value) {
-        day = value;
-    }
-    void setMonth(string value){
-        month = value;
-    }
-    void setYear(string value){
-        year = value;
-    }
-    string printDate() {
-        return day + " " + month + " " + year;
-    }
-    void setDate() {
-        cout << "Enter day: ";
-        cin >> day;
-        cout << "Enter month: ";
-        cin >> month;
-        cout << "Enter year: ";
-        cin >> year;
-    }
-    void setDate(ifstream& fin) {
-        fin >> day;
-        fin >> month;
-        fin >> year;
-    }
-};
-
-class Person { // клас Особа
-protected: // захищені методи - доступні з похідних класів
-    string lastName;
-    string name;
-    Date birthday;
-public: // публічні методи
-    Person() {}
-    Person(string tName, string tLastName) {
-        name = tName;
-        lastName = tLastName;
-    }
-    void setLastName(string value) {
-        lastName = value;
-    }
-    void setName(string value) {
-        name = value;
-    }
-    void setBirth() {
-        birthday.setDate();
-    }
-    void setBirth(ifstream& fin) {
-        birthday.setDate(fin);
-    }
-    string getLastName() {
-        return lastName;
-    }
-    string getName() {
-        return name;
-    }
-    Date getDate() {
-        return birthday;
-    }
-};
-
-class Artist : public Person {
-    string type;
-public:
-    Artist() {
-        type = "0";
-    }
-    Artist(string tName, string tLastName, string tType) : Person(tName, tLastName) {
-        type = tType;
-    }
-    string getType() {
-        return type;
-    }
-    void setType(string value) {
-        type = value;
-    }
-};
-
-class Performer { // клас Артист
-    Person pers; // успадковування класу Особа
-    Artist art; // успадковування класу Виконавець
-public:
-    Person getPerson() {
-        return pers;
-    }
-    Artist getArt() {
-        return art;
-    }
-};
-
-class QuartetOfPerformers { // клас Квартет Виконавців
-    Artist art[4];
-public:
-    Artist getPerformer(int ind) {
-        return art[ind];
-    }
-    void setPerform(int index, Artist tArt) {
-        art[index] = tArt;
-    }
-    string printQuartet() {
-        return art[0].getLastName() + ", " + art[1].getLastName() + ", " + art[2].getLastName() + ", " + art[3].getLastName();
-    }
-    string writeArtist(int ind) {
-        return art[ind].getName() + " " + art[ind].getLastName() + " " + art[ind].getType();
-    }
-};
-
-
-class Quartet { // клас Квартет (музичний твір)
-public:
-    Person composer;
-    string Opus;
-    Date dateCreate;
-};
-
-class Performance { // клас Виконання
-public:
-    //Quartet *composition;
-    vector<Quartet> composition;
-    QuartetOfPerformers performances;
-    Date implemen;
-    int time;
-    int sizeCopmosit;
-
-    void setSize(int size) {
-        composition.reserve(size);
-    }
-
-    int getTime() {
-        return time;
-    }
-};
-
-class LibraryOfQuartets { // клас Фонотека Квартетів
-public:
-    vector<Performance>	impl;
-    Quartet quaert;
-    QuartetOfPerformers QuartOfPerf;
-    int sizeImpl;
-    void setSize(int size) {
-        impl.reserve(size);
-    }
-};
-
-class Files { // клас Файл
-    string file = "figures.txt";
-    string binFile = "figures.bin";
-
-public:
-    void write(LibraryOfQuartets lib[]) { // запис даних у текстовий файл
-        ofstream fout;
-        try
-        {
-            fout.open("text.txt");
-            if (!fout) {
-                throw "File cannot be opened.";
-            }
-            for (int i = 0; i < 10; i++) {
-                for (int j = 0; j < 4; j++) {
-                    fout << lib[0].QuartOfPerf.writeArtist(j) << " ";
-                    fout << lib[0].QuartOfPerf.getPerformer(j).getDate().printDate() << " ";
-                }
-                fout << lib[0].sizeImpl << " ";
-                for (int j = 0; j < lib[0].sizeImpl; j++) {
-                    fout << lib[0].impl[j].time << " ";
-                    fout << lib[0].impl[j].implemen.printDate() << " ";
-                    fout << lib[0].impl[j].sizeCopmosit << " ";
-                    for (int k = 0; k < lib[0].impl[j].sizeCopmosit; k++) {
-                        fout << lib[0].impl[j].composition[k].composer.getName() << " ";
-                        fout << lib[0].impl[j].composition[k].composer.getLastName() << " ";
-                        fout << lib[0].impl[j].composition[k].composer.getDate().printDate() << " ";
-                        fout << lib[0].impl[j].composition[k].dateCreate.printDate() << " ";
-                        fout << lib[0].impl[j].composition[k].Opus << " ";
-                    }
-                }
-            }
-            fout.close();
-        }
-        catch (char err) { // обробка виключних ситуацій
-            cout << err << endl;
-        }
-    }
-
-    void writeBin(LibraryOfQuartets lib[]) { // запис даних у бінарний файл
-        ofstream fout;
-        try
-        {
-            fout.open("textBin.txt", ios::binary | ios::out);
-            if (!fout) {
-                throw "File cannot be opened.";
-            }
-            LibraryOfQuartets temp;
-            for (int i = 0; i < 10; i++) {
-                fout.write((char*)&lib[i], sizeof(temp));
-            }
-
-            fout.close();
-        }
-        catch (char err) { // обробка виключних ситуацій
-            cout << err << endl;
-        }
-    }
-    vector<Performance> impls;
-    vector <Quartet> compositions;
-
-    void readBin(LibraryOfQuartets lib[]) { // зчитування даних з бінарного файлу
-        ifstream fin;
-        try
-        {
-            fin.open("textBin.txt", ios::binary | ios::in);
-            if (!fin) {
-                throw "File cannot be opened.";
-            }
-            LibraryOfQuartets temp;
-            for (int i = 0; i < 10; i++) {
-                fin.read((char*)&lib[i], sizeof(temp));
-            }
-
-
-            fin.close();
-        }
-        catch (char err) { // обробка виключних ситуацій
-            cout << err << endl;
-        }
-    }
-
-    void read(LibraryOfQuartets lib[]) { // зчитування даних з текстового файлу
-        ifstream fin;
-        try
-        {
-            fin.open("text.txt");
-            if (!fin) {
-                throw "File cannot be opened.";
-            }
-            string name, lastName, type;
-            for (int i = 0; i < 10; i++) {
-                QuartetOfPerformers quartet;
-                for (int j = 0; j < 4; j++) {
-                    fin >> name;
-                    fin >> lastName;
-                    fin >> type;
-                    Artist temp(name, lastName, type);
-                    temp.setBirth(fin);
-                    quartet.setPerform(j, temp);
-                }
-                lib[i].QuartOfPerf = quartet;
-                int size;
-                int sizeComposition;
-                fin >> size;
-                lib[i].sizeImpl = size;
-                lib[i].setSize(size);
-                vector<Performance> impl(size);
-                for (int j = 0; j < size; j++) {
-                    fin >> impl[j].time;
-                    impl[j].implemen.setDate(fin);
-                    impl[j].performances = lib[i].QuartOfPerf;
-                    fin >> sizeComposition;
-                    impl[j].sizeCopmosit = sizeComposition;
-                    impl[j].setSize(sizeComposition);
-                    vector <Quartet> composition(sizeComposition);
-                    for (int k = 0; k < sizeComposition; k++) {
-                        fin >> name;
-                        fin >> lastName;
-                        Person temp(name, lastName);
-                        composition[k].composer = temp;
-                        composition[k].composer.setBirth(fin);
-                        composition[k].dateCreate.setDate(fin);
-                        fin >> composition[k].Opus;
-                        impl[j].composition.emplace_back(composition[k]);
-                    }
-                    lib[i].impl.emplace_back(impl[j]);
-                }
-            }
-        }
-        catch (char err) { // обробка виключних ситуацій
-            cout << err << endl;
-        }
-    }
-};
-
-class ListQuart { // агрегація
-
-public:
-    Files file;
-    LibraryOfQuartets lib[10];
-    LibraryOfQuartets operator [] (int i) // перезавантаження оператора []
-    {
-        if (i < 0 || i> 9) {
-            cout << "Boundary Error\n";
-            exit(1);
-        }
-        else {
-            return lib[i];
-        }
-    }
-
-//     template <typename Type> // шаблон фукнції
-//     Type avarage(int index, Type a[index]) {
-//    	 double result = 0;
-//    	 for (int i = 0; i < lib[index].sizeImpl; i++) {
-//    	 	result += a[index];
-//    	 }
-//    	 return result / lib[index].sizeImpl;
-//     }
-
-    double averageCountImpl(int index) { // порахувати кількість виконань
-        double result = 0;
-        for (int i = 0; i < lib[index].sizeImpl; i++) {
-            result += lib[index].impl[i].sizeCopmosit;
-        }
-        return result / lib[index].sizeImpl;
-    }
-    double timeImpl(int index) {
-        double result = 0;
-        for (int i = 0; i < lib[index].sizeImpl; i++) {
-            result += lib[index].impl[i].time;
-        }
-        return result / lib[index].sizeImpl;
-
-    }
-
-    void show() { // виведення даних у вигляді таблиці
-        string temp = string(80, '-');
-        printf("%s\n", temp.c_str());
-        printf("|%-40s|%-20s|%-20s|\n", "Quartet", "Av. count perfom.", "Av. time of performance");
-        printf("%s\n", temp.c_str());
-        for (int i = 0; i < 10; i++) {
-            double impl = averageCountImpl(i);
-            double time = timeImpl(i);
-            printf("|%-30s|%-20f|%-20f|\n", lib[i].QuartOfPerf.printQuartet().c_str(), impl, time);
-            printf("%s\n", temp.c_str());
-        }
-    }
-    void clear() {
-        system("clear");
-    }
-    void inputPerfomers(ListQuart &list) {
-        string name, lastName, type;
-        for (int i = 0; i < 1; i++) {
-            cout << "Enter quartet of musicians #" << i + 1 << ": " << endl;
-            QuartetOfPerformers quartet;
-            for (int j = 0; j < 4; j++) {
-                cout << "Enter musician #" << j + 1 << ": " << endl;
-                cout << "Enter first name: ";
-                cin >> name;
-                cout << "Enter last name: ";
-                cin >> lastName;
-                cout << "Enter musical instrument: ";
-                cin >> type;
-                Artist temp(name,lastName,type);
-                temp.setBirth();
-                quartet.setPerform(j, temp);
-                clear();
-            }
-            list[i].QuartOfPerf = quartet;
-            int size;
-            int sizeComposition;
-            cout << "Enter number of performances: ";
-            cin >> size;
-            // list[i].sizeImpl = size;
-            list[i].setSize(size);
-            vector<Performance> impl(size);
-            for (int j = 0; j < size; j++) {
-                cout << "Enter performance #" << j + 1 << ": " << endl;
-                cout << "Enter the duration of performance: ";
-                cin >> impl[j].time;
-                impl[j].implemen.setDate();
-                impl[j].performances = lib[i].QuartOfPerf;
-                cout << "Enter duration of composition: ";
-                cin >> sizeComposition;
-                impl[j].sizeCopmosit = sizeComposition;
-                impl[j].setSize(sizeComposition);
-                vector <Quartet> composition(sizeComposition);
-                for (int k = 0; k < sizeComposition; k++) {
-                    cout << "Enter composition #" << k+1 << ": " << endl;
-                    cout << "Enter composer first name: ";
-                    cin >> name;
-                    cout << "Enter composer last name: ";
-                    cin >> lastName;
-                    Person temp(name, lastName);
-                    composition[k].composer = temp;
-                    cout << "Enter composer birthdate:" << endl;
-                    composition[k].composer.setBirth();
-                    cout << "Enter data of creation of the composition:" << endl;
-                    composition[k].dateCreate.setDate();
-                    cout << "Enter opus: ";
-                    cin >> composition[k].Opus;
-                    clear();
-                    impl[j].composition.emplace_back(composition[k]);
-                }
-                list[i].impl.emplace_back(impl[j]);
-            }
-        }
-    }
-    void search(int key) { // пошук інформації за числовим полем
-        int count = 0;
-        string temp = string(60, '-');
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < lib[i].sizeImpl; j++) {
-                if (key == lib[i].impl[j].time) {
-                    if (count == 0) {
-                        printf("%s\n",temp.c_str());
-                        printf("|%-7s|%-10s|%-40s|\n", "Time", "Data", "Quartet of performers");
-                        printf("%s\n", temp.c_str());
-                    }
-                    int tTemp = lib[i].impl[j].getTime();
-                    string date = lib[i].impl[j].implemen.printDate();
-                    string quart = lib[i].impl[j].performances.printQuartet();
-                    printf("|%-7d|%-10s|%-40s|\n", tTemp, date.c_str(), quart.c_str());
-                    printf("%s\n", temp.c_str());
-                    count++;
-                }
-            }
-        }
-        cout << "Total number of performances: " << count << endl;
-    }
-
-    void search(string key) { // пошук інформації за текстовим полем
-        int count = 0;
-        string temp = string(60, '-');
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < lib[i].sizeImpl; j++) {
-                for (int k = 0; k < lib[i].impl[j].sizeCopmosit; k++) {
-                    if (key == lib[i].impl[j].composition[k].Opus) {
-                        if (count == 0) {
-                            printf("%s\n", temp.c_str());
-                            printf("|%-10s|%-10s|%-40s|\n", "Opus", "Data", "Composer");
-                            printf("%s\n", temp.c_str());
-                        }
-                        string opus = lib[i].impl[j].composition[k].Opus;
-                        string date = lib[i].impl[j].composition[k].dateCreate.printDate();
-                        string composer = lib[i].impl[j].composition[k].composer.getLastName() + " " + lib[i].impl[j].composition[k].composer.getName();
-                        printf("|%-10s|%-10s|%-40s|\n", opus.c_str(), date.c_str(), composer.c_str());
-                        printf("%s\n", temp.c_str());
-                        count++;
-                    }
-                }
-            }
-        }
-    }
-
-};
-
-void delay() {
-    // TODO solve
-//    system("pause");
-}
-void clear() {
-    system("clear");
-}
-
-
-void marina() {
-    setlocale(LC_ALL, "Russian");
-    int key;
-    int temp;
-    ListQuart list;
-    // меню
-    do {
-        cout << " -----------------------------------" << endl;
-        cout << "| Enter 1 to input data ->          |" << endl;
-        cout << " -----------------------------------" << endl;
-        cout << "| Enter 2 to output data ->         |" << endl;
-        cout << " -----------------------------------" << endl;
-        cout << "| Enter 3 to write data to file ->  |" << endl;
-        cout << " -----------------------------------" << endl;
-        cout << "| Enter 4 to read data from file -> |" << endl;
-        cout << " -----------------------------------" << endl;
-        cout << "| Enter 5 to search data ->         |" << endl;
-        cout << " -----------------------------------" << endl;
-        cout << "| Enter 0 to exit ->                |" << endl;
-        cout << " -----------------------------------" << endl;
-        cout << "Make your choice -> ";
-        cin >> key;
-        switch (key) {
-            case 1:
-                clear();
-                list.inputPerfomers(list);
-                delay();
-                break;
-            case 2:
-                clear();
-                list.show();
-                delay();
-                break;
-            case 3:
-                clear();
-                cout << "Enter 1 to write data in txt file: " << endl;
-                cout << "Enter 2 to write data in binary txt file: " << endl;
-                cin >> temp;
-                if (temp == 1) {
-                    list.file.write(list.lib);
-                }
-                else {
-                    list.file.writeBin(list.lib);
-                }
-                delay();
-                break;
-            case 4:
-                clear();
-                cout << "Enter 1 to read data from txt file: " << endl;
-                cout << "Enter 2 to read data from binary txt file: " << endl;
-                cin >> temp;
-                if (temp == 1) {
-                    list.file.read(list.lib);
-                }
-                else {
-                    list.file.readBin(list.lib);
-                }
-                delay();
-                break;
-            case 5:
-                clear();
-                cout << "Enter 1 to search for performance time: " << endl;
-                cout << "Enter 2 to search for opus: " << endl;
-                cin >> temp;
-                if (temp == 1) {
-                    int time;
-                    cout << "Enter time: ";
-                    cin >> time;
-                    list.search(time);
-                }
-                else {
-                    string opus;
-                    cout << "Enter opus: ";
-                    cin >> opus;
-                    list.search(opus);
-                }
-                delay();
-                break;
-            case 0:
-                break;
-            default:
-                cout << "Repeat your choice: ";
-                break;
-        }
-    } while (key != 0);
-}
-
-/**
- *
- *
- *
- *
- * MARINA BLOCK ENDS HERE
- *
- *
- *
- *
- */
-
 class FigureOperationException {
 private:
     string message;
@@ -693,65 +136,11 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Figure &figure) {
-//        figure.write_to_stream(os);
         figure.describe_basic_params(os);
         os << "; ";
         figure.describe_specific_params(os);
         return os;
     }
-};
-
-// TODO extend Ellipse
-class Round : public Figure { // успадкування
-private:
-    double radius;
-
-protected:
-    // TODO remove?
-//    void write_to_stream(ostream &os) const override {
-//        Figure::write_to_stream(os);
-//        os << "Radius: " << radius;
-//    }
-
-public:
-    Round(const Point &center, const string &name, double radius) : Figure(center, name) {
-        validate_positive(radius, "radius");
-        this->radius = radius;
-    }
-
-    Round(Round& anotherRound) : Figure(anotherRound) {
-        this->radius = anotherRound.radius;
-        validate_positive(radius, "radius");
-    }
-
-    Round() : Figure() {}
-
-    bool contains_value(double value) override {
-        return Figure::contains_value(value) || radius == value;
-    }
-
-    void describe_specific_params(ostream &os) const override {
-        os << "Radius = " << radius;
-    }
-
-    double getSquare() const override {
-        return 3.14 * radius * radius;
-    }
-
-    double getRadius() const {
-        return radius;
-    }
-
-    void setRadius(double radius) {
-        validate_positive(radius, "radius");
-        Round::radius = radius;
-    }
-
-    // TODO remove?
-//    friend ostream &operator<<(ostream &os, const Round &figure) {
-//        figure.write_to_stream(os);
-//        return os;
-//    }
 };
 
 class Triangle : public Figure {
@@ -765,12 +154,6 @@ private:
         double y_center = (a.getY() + b.getY() + c.getY()) / 3;
         return * new Point(x_center, y_center);
     }
-
-protected:
-//    void write_to_stream(ostream &os) const override {
-//        Figure::write_to_stream(os);
-//        os << "; a: " << a << "; b: " << b << "; c: " << c;
-//    }
 
 public:
     Triangle(const Point &a, const Point &b, const Point &c, const string &name) :
@@ -827,22 +210,11 @@ public:
     void setC(const Point &c) {
         Triangle::c = c;
     }
-
-//    friend ostream &operator<<(ostream &os, const Triangle &triangle) {
-//        triangle.write_to_stream(os);
-//        return os;
-//    }
 };
 
 class Rectangle : public Figure {
     double a_length;
     double b_length;
-
-protected:
-//    void write_to_stream(ostream &os) const override {
-//        Figure::write_to_stream(os);
-//        os << "Side A length = " << a_length << "; side B length = " << b_length << ";";
-//    }
 
 public:
     Rectangle(const Point &center, const string &name, double a_length, double b_length) :
@@ -891,22 +263,11 @@ public:
         validate_positive(b_length, "Rectangle side length");
         Rectangle::b_length = b_length;
     }
-
-//    friend ostream &operator<<(ostream &os, const Rectangle &rectangle) {
-//        rectangle.write_to_stream(os);
-//        return os;
-//    }
 };
 
 class Ellipse : public Figure {
     double radius_1;
     double radius_2;
-
-protected:
-//    void write_to_stream(ostream &os) const override {
-//        Figure::write_to_stream(os);
-//        os << "Radius 1 = " << radius_1 << "; Radius 2 = " << radius_2;
-//    }
 
 public:
     Ellipse(const Point &center, const string &name, double radius_1, double radius_2) :
@@ -942,7 +303,7 @@ public:
         return radius_1;
     }
 
-    void setRadius_1(double radius_1) {
+    virtual void setRadius_1(double radius_1) {
         validate_positive(radius_1, "radius");
         Ellipse::radius_1 = radius_1;
     }
@@ -951,15 +312,38 @@ public:
         return radius_2;
     }
 
-    void setRadius_2(double radius_2) {
+    virtual void setRadius_2(double radius_2) {
         validate_positive(radius_2, "radius");
         Ellipse::radius_2 = radius_2;
     }
+};
 
-//    friend ostream &operator<<(ostream &os, const Ellipse &ellipse) {
-//        ellipse.write_to_stream(os);
-//        return os;
-//    }
+class Round : public Ellipse { // успадкування
+
+public:
+    Round(const Point &center, const string &name, double radius) : Ellipse(center, name, radius, radius) {}
+
+    Round(Round& anotherRound) : Ellipse(anotherRound) {}
+
+    Round() : Ellipse() {}
+
+
+    void describe_specific_params(ostream &os) const override {
+        os << "Radius = " << getRadius_1();
+    }
+
+    void setRadius(double radius) {
+        setRadius_1(radius);
+        setRadius_2(radius);
+    }
+
+    void setRadius_1(double radius_1) override {
+        setRadius(radius_1);
+    }
+
+    void setRadius_2(double radius_2) override {
+        setRadius(radius_2);
+    }
 };
 
 // Move to FiguresContainer?
@@ -1202,7 +586,7 @@ private:
     void write_round(ofstream& fout, Round& round) {
         fout << round.getName() << endl;
         write_point(fout, round.getCenter());
-        fout << round.getRadius() << endl;
+        fout << round.getRadius_1() << endl;
     }
 
     void write_triangle(ofstream& fout, Triangle& triangle) {
@@ -1440,6 +824,8 @@ void add_ellipses(FiguresContainer* figuresContainer) {
     }
 }
 
+
+// TODO remove
 void dev_main() {
     Point *point = new Point(2, 1.5);
     Round *round = new Round(*point, "my round", 2.5);
@@ -1495,7 +881,7 @@ void dev_main() {
 
 
     try {
-        round->setRadius(0);
+        round->setRadius_1(0);
     } catch (const InvalidParamException& e) {
         cout << e.getMessage() << endl;
     }
@@ -1616,6 +1002,10 @@ void print_table(FiguresContainer& container) { // виведення даних
     printf("%s\n", line.c_str());
 }
 
+void clear() {
+    system("clear");
+}
+
 void menu() {
     setlocale(LC_ALL, "Russian");
     int key;
@@ -1647,7 +1037,6 @@ void menu() {
                 add_triangles(container);
                 add_rectangles(container);
                 add_ellipses(container);
-                delay();
                 break;
             case 2:
                 clear();
@@ -1656,7 +1045,6 @@ void menu() {
                     break;
                 }
                 print_table(*container);
-                delay();
                 break;
             case 3:
                 clear();
@@ -1665,12 +1053,10 @@ void menu() {
                     break;
                 }
                 write(fileHandler, *container);
-                delay();
                 break;
             case 4:
                 clear();
                 container = read(fileHandler, container);
-                delay();
                 break;
             case 5:
                 clear();
@@ -1679,7 +1065,6 @@ void menu() {
                     break;
                 }
                 search(container);
-                delay();
                 break;
             case 0:
                 break;
@@ -1694,7 +1079,6 @@ void menu() {
 
 int main() {
 //    dev_main();
-//    marina();
     menu();
 
     return 0;
