@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <cmath>
 
 using namespace std;
 
@@ -345,7 +346,7 @@ public:
         }
     }
     void clear() {
-        system("cls");
+        system("clear");
     }
     void inputPerfomers(ListQuart &list) {
         string name, lastName, type;
@@ -455,10 +456,11 @@ public:
 };
 
 void delay() {
-    system("pause");
+    // TODO solve
+//    system("pause");
 }
 void clear() {
-    system("cls");
+    system("clear");
 }
 
 
@@ -615,7 +617,7 @@ public: // публічні поля та методи
     }
 
     friend ostream &operator<<(ostream &os, const Point &point) {
-        os << "x: " << point.x << " y: " << point.y;
+        os << "(" << point.x << ", " << point.y << ")";
         return os;
     }
 };
@@ -637,7 +639,8 @@ protected:
     }
 
     virtual void write_to_stream(ostream &os) const {
-        os << "name: " << name << "; center: " << center << "; square = " << getSquare();
+        describe_basic_params(os);
+        describe_basic_params(os);
     }
 
 public:
@@ -654,6 +657,24 @@ public:
     }
 
     virtual double getSquare() const = 0;
+
+    virtual void describe_basic_params(ostream &os) const {
+        os << "name: " << name << "; center = " << center << "; square = " << getSquare();
+    }
+
+    virtual string describe_basic_params() const {
+        stringstream ss;
+        describe_basic_params(ss);
+        return ss.str();
+    }
+
+    virtual void describe_specific_params(ostream &os) const = 0;
+
+    virtual string describe_specific_params() const {
+        stringstream ss;
+        describe_specific_params(ss);
+        return ss.str();
+    }
 
     const Point &getCenter() const {
         return center;
@@ -672,20 +693,25 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Figure &figure) {
-        figure.write_to_stream(os);
+//        figure.write_to_stream(os);
+        figure.describe_basic_params(os);
+        os << "; ";
+        figure.describe_specific_params(os);
         return os;
     }
 };
 
+// TODO extend Ellipse
 class Round : public Figure { // успадкування
 private:
     double radius;
 
 protected:
-    void write_to_stream(ostream &os) const override {
-        Figure::write_to_stream(os);
-        os << " radius: " << radius;
-    }
+    // TODO remove?
+//    void write_to_stream(ostream &os) const override {
+//        Figure::write_to_stream(os);
+//        os << "Radius: " << radius;
+//    }
 
 public:
     Round(const Point &center, const string &name, double radius) : Figure(center, name) {
@@ -704,6 +730,10 @@ public:
         return Figure::contains_value(value) || radius == value;
     }
 
+    void describe_specific_params(ostream &os) const override {
+        os << "Radius = " << radius;
+    }
+
     double getSquare() const override {
         return 3.14 * radius * radius;
     }
@@ -717,10 +747,11 @@ public:
         Round::radius = radius;
     }
 
-    friend ostream &operator<<(ostream &os, const Round &figure) {
-        figure.write_to_stream(os);
-        return os;
-    }
+    // TODO remove?
+//    friend ostream &operator<<(ostream &os, const Round &figure) {
+//        figure.write_to_stream(os);
+//        return os;
+//    }
 };
 
 class Triangle : public Figure {
@@ -736,10 +767,10 @@ private:
     }
 
 protected:
-    void write_to_stream(ostream &os) const override {
-        Figure::write_to_stream(os);
-        os << "; a: " << a << "; b: " << b << "; c: " << c;
-    }
+//    void write_to_stream(ostream &os) const override {
+//        Figure::write_to_stream(os);
+//        os << "; a: " << a << "; b: " << b << "; c: " << c;
+//    }
 
 public:
     Triangle(const Point &a, const Point &b, const Point &c, const string &name) :
@@ -769,6 +800,10 @@ public:
         return determinant / 2;
     }
 
+    void describe_specific_params(ostream &os) const override {
+        os << "Vertex A = " << a << "; Vertex B = " << b << "; Vertex C = " << c;
+    }
+
     const Point &getA() const {
         return a;
     }
@@ -793,10 +828,10 @@ public:
         Triangle::c = c;
     }
 
-    friend ostream &operator<<(ostream &os, const Triangle &triangle) {
-        triangle.write_to_stream(os);
-        return os;
-    }
+//    friend ostream &operator<<(ostream &os, const Triangle &triangle) {
+//        triangle.write_to_stream(os);
+//        return os;
+//    }
 };
 
 class Rectangle : public Figure {
@@ -804,10 +839,10 @@ class Rectangle : public Figure {
     double b_length;
 
 protected:
-    void write_to_stream(ostream &os) const override {
-        Figure::write_to_stream(os);
-        os << " A side length: " << a_length << "; B side length: " << b_length << ";";
-    }
+//    void write_to_stream(ostream &os) const override {
+//        Figure::write_to_stream(os);
+//        os << "Side A length = " << a_length << "; side B length = " << b_length << ";";
+//    }
 
 public:
     Rectangle(const Point &center, const string &name, double a_length, double b_length) :
@@ -835,6 +870,10 @@ public:
         return a_length * b_length;
     }
 
+    void describe_specific_params(ostream &os) const override {
+        os << "Side A length: " << a_length << "; side B length: " << b_length << ";";
+    }
+
     double getA_length() const {
         return a_length;
     }
@@ -853,10 +892,10 @@ public:
         Rectangle::b_length = b_length;
     }
 
-    friend ostream &operator<<(ostream &os, const Rectangle &rectangle) {
-        rectangle.write_to_stream(os);
-        return os;
-    }
+//    friend ostream &operator<<(ostream &os, const Rectangle &rectangle) {
+//        rectangle.write_to_stream(os);
+//        return os;
+//    }
 };
 
 class Ellipse : public Figure {
@@ -864,10 +903,10 @@ class Ellipse : public Figure {
     double radius_2;
 
 protected:
-    void write_to_stream(ostream &os) const override {
-        Figure::write_to_stream(os);
-        os << " radius_1: " << radius_1 << "; radius_2: " << radius_2;
-    }
+//    void write_to_stream(ostream &os) const override {
+//        Figure::write_to_stream(os);
+//        os << "Radius 1 = " << radius_1 << "; Radius 2 = " << radius_2;
+//    }
 
 public:
     Ellipse(const Point &center, const string &name, double radius_1, double radius_2) :
@@ -895,6 +934,10 @@ public:
         return 3.14 * radius_1 * radius_2;
     }
 
+    void describe_specific_params(ostream &os) const override {
+        os << "Radius = " << radius_1 << "; Radius 2 = " << radius_2;
+    }
+
     double getRadius_1() const {
         return radius_1;
     }
@@ -913,10 +956,10 @@ public:
         Ellipse::radius_2 = radius_2;
     }
 
-    friend ostream &operator<<(ostream &os, const Ellipse &ellipse) {
-        ellipse.write_to_stream(os);
-        return os;
-    }
+//    friend ostream &operator<<(ostream &os, const Ellipse &ellipse) {
+//        ellipse.write_to_stream(os);
+//        return os;
+//    }
 };
 
 // Move to FiguresContainer?
@@ -1144,6 +1187,7 @@ Ellipse* create_ellipse() {
 }
 
 class FileHandler {
+                // TODO avoid usage of linux path
     string file = "/tmp/figures.txt";
     string binFile = "/tmp/figures.bin";
 
@@ -1542,6 +1586,36 @@ void search(FiguresContainer* container) {
     }
 }
 
+void print_table(FiguresContainer& container) { // виведення даних у вигляді таблиці
+    string line = string(145, '-');
+    printf("%s\n", line.c_str());
+    printf("|%-20s|%-30s|%-10s|%-80s|\n", "Figure name", "Center", "Square", "Additional params");
+    printf("%s\n", line.c_str());
+
+    for (int i = 0; i < container.getSize(); i++) {
+        Figure& figure = container[i];
+        stringstream center;
+        center << figure.getCenter();
+        printf("|%-20s|%-30s|%-10.2f|%-80s|\n",
+                figure.getName().c_str(),
+                center.str().c_str(),
+                figure.getSquare(),
+                figure.describe_specific_params().c_str());
+        printf("%s\n", line.c_str());
+    }
+
+    printf("\n\n");
+    line = string(94, '-');
+    printf("%s\n", line.c_str());
+    printf("|%-30s|%-30s|%-30s|\n", "Average square (double)", "Average square (int)", "Average X");
+    printf("%s\n", line.c_str());
+    printf("|%-30.2f|%-30d|%-30.2f|\n",
+            container.getAverageSquare<double>(),
+            container.getAverageSquare<int>(),
+            container.getAverageX<double>());
+    printf("%s\n", line.c_str());
+}
+
 void menu() {
     setlocale(LC_ALL, "Russian");
     int key;
@@ -1576,18 +1650,12 @@ void menu() {
                 delay();
                 break;
             case 2:
-                // TODO table
                 clear();
                 if (container == nullptr) {
                     cout << "No figures created yet" << endl;
                     break;
                 }
-                cout << "All figures:" << endl;
-                cout << *container << endl;
-                cout << "Average square double = :" << container->getAverageSquare<double>() << endl;
-                cout << "Average square int = :" << container->getAverageSquare<int>() << endl;
-                cout << "Average X double = :" << container->getAverageX<double>() << endl;
-                cout << "Average X int = :" << container->getAverageX<int>() << endl;
+                print_table(*container);
                 delay();
                 break;
             case 3:
@@ -1628,10 +1696,6 @@ int main() {
 //    dev_main();
 //    marina();
     menu();
-
-
-
-
 
     return 0;
 
