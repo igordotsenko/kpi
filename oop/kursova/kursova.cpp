@@ -37,19 +37,17 @@ public:
     ContainerIsFullException(const string &message) : FigureOperationException(message) {}
 };
 
-template <class T>
+//template <class T>
 class Serializable {
 public:
-    virtual void serialize(ofstream &fout) {
-        fout.write((char*) this, sizeof(T));
-    }
 
-    virtual void deserialize(ifstream &fin) {
-        fin.read((char*) this, sizeof(T));
-    }
+    Serializable() {}
+
+    virtual void serialize(ofstream &fout) = 0;
+    virtual void deserialize(ifstream &fin) = 0;
 };
 
-class Point : public Serializable<Point> { // клас Точка
+class Point : public Serializable { // клас Точка
 private: // приватні поля та методи
     double x;
     double y;
@@ -57,7 +55,7 @@ private: // приватні поля та методи
 public: // публічні поля та методи
     Point(double x, double y) : x(x), y(y) {}
 
-    Point() {
+    Point() : Serializable() {
 
     }
 
@@ -86,6 +84,14 @@ public: // публічні поля та методи
         Point::y = y;
     }
 
+    void serialize(ofstream &fout) override {
+        fout.write((char*) this, sizeof(Point));
+    }
+
+    void deserialize(ifstream &fin) override {
+        fin.read((char*) this, sizeof(Point));
+    }
+
     friend ostream &operator<<(ostream &os, const Point &point) {
         os << "(" << point.x << ", " << point.y << ")";
         return os;
@@ -94,7 +100,7 @@ public: // публічні поля та методи
 
 
 // TODO add comments
-class Figure : public Serializable<Figure> {
+class Figure : public Serializable {
 private:
     Point* center = nullptr; // агрегаця
     string name;
@@ -158,15 +164,26 @@ public:
     }
 
     void serialize(ofstream &fout) override {
-        Serializable::serialize(fout);
+        fout.write((char*) this, sizeof(Figure));
         center->serialize(fout);
     }
 
     void deserialize(ifstream &fin) override {
-        Serializable::deserialize(fin);
+        fin.read((char*) this, sizeof(Figure));
         center = new Point();
         center->deserialize(fin);
     }
+
+//    void serialize(ofstream &fout) override {
+//        Serializable::serialize(fout);
+//        center->serialize(fout);
+//    }
+//
+//    void deserialize(ifstream &fin) override {
+//        Serializable::deserialize(fin);
+//        center = new Point();
+//        center->deserialize(fin);
+//    }
 
 
     const Point &getCenter() const {
@@ -186,6 +203,10 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Figure &figure) {
+
+        // TODO remove
+        cout << &figure << endl;
+        cout << &figure << endl;
         figure.describe_basic_params(os);
         os << "; ";
         figure.describe_specific_params(os);
@@ -193,7 +214,7 @@ public:
     }
 };
 
-class Triangle : public Figure, Serializable<Triangle> {
+class Triangle : public Figure {
 private:
     Point* a;
     Point* b;
@@ -243,19 +264,18 @@ public:
         os << "Vertex A = " << *a << "; Vertex B = " << *b << "; Vertex C = " << *c;
     }
 
+
     void serialize(ofstream &fout) override {
+//        fout.write((char*) this, sizeof(Triangle));
         Figure::serialize(fout);
-        // TODO delete prev points
         a->serialize(fout);
         b->serialize(fout);
         c->serialize(fout);
     }
 
     void deserialize(ifstream &fin) override {
+//        fin.read((char*) this, sizeof(Figure));
         Figure::deserialize(fin);
-        delete a;
-        delete b;
-        delete c;
         a = new Point();
         b = new Point();
         c = new Point();
@@ -263,6 +283,27 @@ public:
         b->deserialize(fin);
         c->deserialize(fin);
     }
+
+//    void serialize(ofstream &fout) override {
+//        Figure::serialize(fout);
+//        // TODO delete prev points
+//        a->serialize(fout);
+//        b->serialize(fout);
+//        c->serialize(fout);
+//    }
+//
+//    void deserialize(ifstream &fin) override {
+//        Figure::deserialize(fin);
+//        delete a;
+//        delete b;
+//        delete c;
+//        a = new Point();
+//        b = new Point();
+//        c = new Point();
+//        a->deserialize(fin);
+//        b->deserialize(fin);
+//        c->deserialize(fin);
+//    }
 
     const Point &getA() const {
         return *a;
@@ -289,7 +330,7 @@ public:
     }
 };
 
-class Rectangle : public Figure, Serializable<Rectangle> {
+class Rectangle : public Figure {
     double a_length;
     double b_length;
 
@@ -325,13 +366,25 @@ public:
 
     void serialize(ofstream &fout) override {
         Figure::serialize(fout);
-        Serializable<Rectangle>::serialize(fout);
+        fout.write((char*) &a_length, sizeof(double));
+        fout.write((char*) &b_length, sizeof(double));
     }
 
     void deserialize(ifstream &fin) override {
         Figure::deserialize(fin);
-        Serializable<Rectangle>::deserialize(fin);
+        fin.read((char*) &a_length, sizeof(double));
+        fin.read((char*) &b_length, sizeof(double));
     }
+
+//    void serialize(ofstream &fout) override {
+//        Figure::serialize(fout);
+//        Serializable<Rectangle>::serialize(fout);
+//    }
+//
+//    void deserialize(ifstream &fin) override {
+//        Figure::deserialize(fin);
+//        Serializable<Rectangle>::deserialize(fin);
+//    }
 
     double getA_length() const {
         return a_length;
@@ -352,7 +405,7 @@ public:
     }
 };
 
-class Ellipse : public Figure, Serializable<Ellipse> {
+class Ellipse : public Figure {
     double radius_1;
     double radius_2;
 
@@ -388,13 +441,25 @@ public:
 
     void serialize(ofstream &fout) override {
         Figure::serialize(fout);
-        Serializable<Ellipse>::serialize(fout);
+        fout.write((char*) &radius_1, sizeof(double));
+        fout.write((char*) &radius_2, sizeof(double));
     }
 
     void deserialize(ifstream &fin) override {
         Figure::deserialize(fin);
-        Serializable<Ellipse>::deserialize(fin);
+        fin.read((char*) &radius_1, sizeof(double));
+        fin.read((char*) &radius_2, sizeof(double));
     }
+
+//    void serialize(ofstream &fout) override {
+//        Figure::serialize(fout);
+//        Serializable<Ellipse>::serialize(fout);
+//    }
+//
+//    void deserialize(ifstream &fin) override {
+//        Figure::deserialize(fin);
+//        Serializable<Ellipse>::deserialize(fin);
+//    }
 
     double getRadius_1() const {
         return radius_1;
@@ -415,7 +480,7 @@ public:
     }
 };
 
-class Round : public Ellipse, Serializable<Round> { // успадкування
+class Round : public Ellipse { // успадкування
 
 public:
     Round(Point* center, const string &name, double radius) : Ellipse(center, name, radius, radius) {}
@@ -442,15 +507,15 @@ public:
         setRadius(radius_2);
     }
 
-    void serialize(ofstream &fout) override {
-        Ellipse::serialize(fout);
-        Serializable<Round>::serialize(fout);
-    }
-
-    void deserialize(ifstream &fin) override {
-        Ellipse::deserialize(fin);
-        Serializable<Round>::deserialize(fin);
-    }
+//    void serialize(ofstream &fout) override {
+//        Ellipse::serialize(fout);
+//        Serializable<Round>::serialize(fout);
+//    }
+//
+//    void deserialize(ifstream &fin) override {
+//        Ellipse::deserialize(fin);
+//        Serializable<Round>::deserialize(fin);
+//    }
 };
 
 
@@ -837,8 +902,9 @@ public:
             container = new FiguresContainer(total_number_of_figures);
             for (int i = 0; i < number_of_rounds; i++) {
                 Round* round = new Round();
+//                cout << "before deser" << *round << endl;
                 round->deserialize(fin);
-                cout << "deser" << *round << endl;
+                cout << "deser = " << *round << endl;
                 container->addFigure(round);
             }
             for (int i = 0; i < number_of_triangles; i++) {
@@ -957,15 +1023,22 @@ void dev_main() {
     // serialize Round
     fout.open("/tmp/round.bin", ios::binary | ios::out);
     round->serialize(fout);
+    round = new Round(point, "new round", 42);;
+    round->serialize(fout);
     fout.close();
 
     fin.open("/tmp/round.bin", ios::binary | ios::in);
 
     auto deser_round = new Round();
     deser_round->deserialize(fin);
+    cout << "Deser round = " << *deser_round << endl;
+    cout << "Deser round square = " << deser_round->getSquare() << endl;
+    deser_round = new Round();
+    deser_round->deserialize(fin);
+    cout << "Deser round = " << *deser_round << endl;
+    cout << "Deser round square = " << deser_round->getSquare() << endl;
     fin.close();
 
-    cout << "Deser round = " << *deser_round << endl;
 
     auto * container = new FiguresContainer(4);
     container->addFigure(round);
