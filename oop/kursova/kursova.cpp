@@ -6,6 +6,14 @@
 
 using namespace std;
 
+// TODO update to be 10 in total
+unsigned int number_of_rounds = 3;
+unsigned int number_of_triangles = 3;
+unsigned int number_of_rectangles = 2;
+unsigned int number_of_ellipses = 2;
+unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
+
+
 class FigureOperationException {
 private:
     string message;
@@ -29,7 +37,19 @@ public:
     ContainerIsFullException(const string &message) : FigureOperationException(message) {}
 };
 
-class Point { // клас Точка
+template <class T>
+class Serializable {
+public:
+    virtual void serialize(ofstream &fout) {
+        fout.write((char*) this, sizeof(T));
+    }
+
+    virtual void deserialize(ifstream &fin) {
+        fin.read((char*) this, sizeof(T));
+    }
+};
+
+class Point : public Serializable<Point> { // клас Точка
 private: // приватні поля та методи
     double x;
     double y;
@@ -37,7 +57,14 @@ private: // приватні поля та методи
 public: // публічні поля та методи
     Point(double x, double y) : x(x), y(y) {}
 
-    Point() {}
+    Point() {
+
+    }
+
+    Point(Point& anotherPoint) {
+        this->x = anotherPoint.x;
+        this->y = anotherPoint.y;
+    }
 
     bool contains_value(double value) {
         return x == value || y == value;
@@ -67,9 +94,9 @@ public: // публічні поля та методи
 
 
 // TODO add comments
-class Figure {
+class Figure : public Serializable<Figure> {
 private:
-    Point center; // агрегаця
+    Point* center = nullptr; // агрегаця
     string name;
 
 protected:
@@ -87,12 +114,23 @@ protected:
     }
 
 public:
-    Figure(const Point &center, const string &name) : center(center), name(name) {}
+    Figure(Point* center, const string &name) : center(center), name(name) {}
 
     Figure() {}
 
+    Figure(Figure& anotherFigure) {
+        // TODO resolve
+//        delete this->center;
+        this->name = anotherFigure.name;
+        this->center = new Point(*anotherFigure.center);
+    }
+
+    virtual ~Figure() {
+        delete center;
+    }
+
     virtual bool contains_value(double value) {
-        return center.contains_value(value) || getSquare() == value;
+        return center->contains_value(value) || getSquare() == value;
     }
 
     virtual bool contains_string(const string str) {
@@ -102,7 +140,7 @@ public:
     virtual double getSquare() const = 0;
 
     virtual void describe_basic_params(ostream &os) const {
-        os << "name: " << name << "; center = " << center << "; square = " << getSquare();
+        os << "name: " << name << "; center = " << *center << "; square = " << getSquare();
     }
 
     virtual string describe_basic_params() const {
@@ -119,11 +157,23 @@ public:
         return ss.str();
     }
 
-    const Point &getCenter() const {
-        return center;
+    void serialize(ofstream &fout) override {
+        Serializable::serialize(fout);
+        center->serialize(fout);
     }
 
-    void setCenter(const Point &center) {
+    void deserialize(ifstream &fin) override {
+        Serializable::deserialize(fin);
+        center = new Point();
+        center->deserialize(fin);
+    }
+
+
+    const Point &getCenter() const {
+        return *center;
+    }
+
+    void setCenter(Point* center) {
         Figure::center = center;
     }
 
@@ -143,23 +193,23 @@ public:
     }
 };
 
-class Triangle : public Figure {
+class Triangle : public Figure, Serializable<Triangle> {
 private:
-    Point a;
-    Point b;
-    Point c;
+    Point* a;
+    Point* b;
+    Point* c;
 
-    Point &compute_center(const Point &a, const Point &b, const Point &c) {
+    Point* compute_center(const Point &a, const Point &b, const Point &c) {
         double x_center = (a.getX() + b.getX() + c.getX()) / 3;
         double y_center = (a.getY() + b.getY() + c.getY()) / 3;
-        return * new Point(x_center, y_center);
+        return new Point(x_center, y_center);
     }
 
 public:
-    Triangle(const Point &a, const Point &b, const Point &c, const string &name) :
-        Figure(compute_center(a, b,c), name), a(a), b(b), c(c) {}
+    Triangle(Point* a, Point* b, Point* c, const string &name) :
+        Figure(compute_center(*a, *b, *c), name), a(a), b(b), c(c) {}
 
-    Triangle() {}
+    Triangle(): a(nullptr), b(nullptr), c(nullptr) {}
 
     Triangle(Triangle& anotherTriangle) : Figure(anotherTriangle) {
             this->a = anotherTriangle.a;
@@ -167,15 +217,21 @@ public:
             this->c = anotherTriangle.c;
     }
 
+    virtual ~Triangle() {
+        delete a;
+        delete b;
+        delete c;
+    }
+
     bool contains_value(double value) override {
-        return Figure::contains_value(value) || a.contains_value(value)
-        || b.contains_value(value) || c.contains_value(value);
+        return Figure::contains_value(value) || a->contains_value(value)
+        || b->contains_value(value) || c->contains_value(value);
     }
 
     double getSquare() const override {
         double determinant = (
-                (a.getX()-c.getX()) * (b.getY()-c.getY()) -
-                (a.getY() - c.getY()) * (b.getX() - c.getX())
+                (a->getX()-c->getX()) * (b->getY()-c->getY()) -
+                (a->getY() - c->getY()) * (b->getX() - c->getX())
                 );
         if (determinant < 0) {
             determinant *= -1;
@@ -184,40 +240,61 @@ public:
     }
 
     void describe_specific_params(ostream &os) const override {
-        os << "Vertex A = " << a << "; Vertex B = " << b << "; Vertex C = " << c;
+        os << "Vertex A = " << *a << "; Vertex B = " << *b << "; Vertex C = " << *c;
+    }
+
+    void serialize(ofstream &fout) override {
+        Figure::serialize(fout);
+        // TODO delete prev points
+        a->serialize(fout);
+        b->serialize(fout);
+        c->serialize(fout);
+    }
+
+    void deserialize(ifstream &fin) override {
+        Figure::deserialize(fin);
+        delete a;
+        delete b;
+        delete c;
+        a = new Point();
+        b = new Point();
+        c = new Point();
+        a->deserialize(fin);
+        b->deserialize(fin);
+        c->deserialize(fin);
     }
 
     const Point &getA() const {
-        return a;
+        return *a;
     }
 
-    void setA(const Point &a) {
+    void setA(Point *a) {
         Triangle::a = a;
     }
 
     const Point &getB() const {
-        return b;
+        return *b;
     }
 
-    void setB(const Point &b) {
+    void setB(Point *b) {
         Triangle::b = b;
     }
 
     const Point &getC() const {
-        return c;
+        return *c;
     }
 
-    void setC(const Point &c) {
+    void setC(Point *c) {
         Triangle::c = c;
     }
 };
 
-class Rectangle : public Figure {
+class Rectangle : public Figure, Serializable<Rectangle> {
     double a_length;
     double b_length;
 
 public:
-    Rectangle(const Point &center, const string &name, double a_length, double b_length) :
+    Rectangle(Point* center, const string &name, double a_length, double b_length) :
     Figure(center, name) {
         validate_positive(a_length, "Rectangle side length");
         validate_positive(b_length, "Rectangle side length");
@@ -246,6 +323,16 @@ public:
         os << "Side A length: " << a_length << "; side B length: " << b_length << ";";
     }
 
+    void serialize(ofstream &fout) override {
+        Figure::serialize(fout);
+        Serializable<Rectangle>::serialize(fout);
+    }
+
+    void deserialize(ifstream &fin) override {
+        Figure::deserialize(fin);
+        Serializable<Rectangle>::deserialize(fin);
+    }
+
     double getA_length() const {
         return a_length;
     }
@@ -265,12 +352,12 @@ public:
     }
 };
 
-class Ellipse : public Figure {
+class Ellipse : public Figure, Serializable<Ellipse> {
     double radius_1;
     double radius_2;
 
 public:
-    Ellipse(const Point &center, const string &name, double radius_1, double radius_2) :
+    Ellipse(Point* center, const string &name, double radius_1, double radius_2) :
     Figure(center, name) {
         validate_positive(radius_1, "radius");
         validate_positive(radius_2, "radius");
@@ -299,6 +386,16 @@ public:
         os << "Radius = " << radius_1 << "; Radius 2 = " << radius_2;
     }
 
+    void serialize(ofstream &fout) override {
+        Figure::serialize(fout);
+        Serializable<Ellipse>::serialize(fout);
+    }
+
+    void deserialize(ifstream &fin) override {
+        Figure::deserialize(fin);
+        Serializable<Ellipse>::deserialize(fin);
+    }
+
     double getRadius_1() const {
         return radius_1;
     }
@@ -318,10 +415,10 @@ public:
     }
 };
 
-class Round : public Ellipse { // успадкування
+class Round : public Ellipse, Serializable<Round> { // успадкування
 
 public:
-    Round(const Point &center, const string &name, double radius) : Ellipse(center, name, radius, radius) {}
+    Round(Point* center, const string &name, double radius) : Ellipse(center, name, radius, radius) {}
 
     Round(Round& anotherRound) : Ellipse(anotherRound) {}
 
@@ -344,14 +441,18 @@ public:
     void setRadius_2(double radius_2) override {
         setRadius(radius_2);
     }
+
+    void serialize(ofstream &fout) override {
+        Ellipse::serialize(fout);
+        Serializable<Round>::serialize(fout);
+    }
+
+    void deserialize(ifstream &fin) override {
+        Ellipse::deserialize(fin);
+        Serializable<Round>::deserialize(fin);
+    }
 };
 
-// Move to FiguresContainer?
-unsigned int number_of_rounds = 2;
-unsigned int number_of_triangles = 1;
-unsigned int number_of_rectangles = 2;
-unsigned int number_of_ellipses = 1;
-unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
 
 class FiguresContainer {
 private:
@@ -361,10 +462,8 @@ private:
 
 public:
     FiguresContainer(const unsigned int size) {
-        // TODO use reserve isntead of passing to constructor
         figures = new vector<Figure*>(size);
-        // TODO remove
-        cout << "Created vector. Input size = " << size << "; vector size = " << figures -> size() << endl;
+        figures->reserve(size);
         maxSize = size;
     }
 
@@ -506,7 +605,7 @@ Round* create_round() {
             cout << "Enter Round Radius: ";
             radius = read_input<double>();
 
-            return new Round(*center, create_name(), radius);
+            return new Round(center, create_name(), radius);
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
         }
@@ -525,7 +624,7 @@ Triangle* create_triangle() {
             cout << "Enter Triangle Vertex C coordinates:" << endl;
             Point* c = create_point();
 
-            return new Triangle(*a, *b, *c, create_name());
+            return new Triangle(a, b, c, create_name());
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
         }
@@ -544,7 +643,7 @@ Rectangle* create_rectangle() {
             cout << "Enter Rectangle side B length:" << endl;
             double length_b = read_input<double>();
 
-            return new Rectangle(*center, create_name(), length_a, length_b);
+            return new Rectangle(center, create_name(), length_a, length_b);
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
         }
@@ -563,7 +662,7 @@ Ellipse* create_ellipse() {
             cout << "Enter Ellipse Radius 2:" << endl;
             double radius_2 = read_input<double>();
 
-            return new Ellipse(*center, create_name(), radius_1, radius_2);
+            return new Ellipse(center, create_name(), radius_1, radius_2);
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
         }
@@ -571,9 +670,8 @@ Ellipse* create_ellipse() {
 }
 
 class FileHandler {
-                // TODO avoid usage of linux path
-    string file = "/tmp/figures.txt";
-    string binFile = "/tmp/figures.bin";
+    string file = "figures.txt";
+    string binFile = "figures.bin";
 
 private:
     // Write Operations
@@ -612,14 +710,14 @@ private:
 
     // Read operations
     // TODO maybe should return reference here?
-    Point read_point(ifstream& fin) {
+    Point* read_point(ifstream& fin) {
         double x;
         double y;
 
         fin >> x;
         fin >> y;
 
-        return {x, y};
+        return new Point(x, y);
     }
 
     Round* read_round(ifstream& fin) {
@@ -627,7 +725,7 @@ private:
         double radius;
 
         fin >> name;
-        Point center = read_point(fin);
+        Point* center = read_point(fin);
         fin >> radius;
 
         return new Round(center, name, radius);
@@ -637,9 +735,9 @@ private:
         string name;
         fin >> name;
 
-        Point a = read_point(fin);
-        Point b = read_point(fin);
-        Point c = read_point(fin);
+        auto a = read_point(fin);
+        auto b = read_point(fin);
+        auto c = read_point(fin);
 
         return new Triangle(a, b, c, name);
     }
@@ -648,7 +746,7 @@ private:
         string name;
         fin >> name;
 
-        Point center = read_point(fin);
+        auto center = read_point(fin);
 
         double a_len;
         fin >> a_len;
@@ -663,7 +761,7 @@ private:
         string name;
         fin >> name;
 
-        Point center = read_point(fin);
+        auto center = read_point(fin);
 
         double rad_1;
         fin >> rad_1;
@@ -681,8 +779,7 @@ public:
         try {
             fout.open(file);
             if (!fout) {
-                // TODO handle
-                throw "File cannot be opened.";
+                throw "File cannot be opened";
             }
 
             // TODO move to write methods to classes
@@ -717,18 +814,8 @@ public:
             if (!fout) {
                 throw "File cannot be opened.";
             }
-            int index = 0;
-            for (int i = 0; i < number_of_rounds; i++) {
-                fout.write((char*)&container[index++], sizeof(Round));
-            }
-            for (int i = 0; i < number_of_triangles; i++) {
-                fout.write((char*)&container[index++], sizeof(Triangle));
-            }
-            for (int i = 0; i < number_of_rectangles; i++) {
-                fout.write((char*)&container[index++], sizeof(Rectangle));
-            }
-            for (int i = 0; i < number_of_ellipses; i++) {
-                fout.write((char*)&container[index++], sizeof(Ellipse));
+            for (int i = 0; i < container.getSize(); i++) {
+                container[i].serialize(fout);
             }
 
             fout.close();
@@ -748,28 +835,40 @@ public:
                 throw "File cannot be opened.";
             }
             container = new FiguresContainer(total_number_of_figures);
-            read_bin_object<Round>(fin, number_of_rounds, *container);
-            read_bin_object<Triangle>(fin, number_of_triangles, *container);
-            read_bin_object<Rectangle>(fin, number_of_rectangles, *container);
-            read_bin_object<Ellipse>(fin, number_of_ellipses, *container);
+            for (int i = 0; i < number_of_rounds; i++) {
+                Round* round = new Round();
+                round->deserialize(fin);
+                cout << "deser" << *round << endl;
+                container->addFigure(round);
+            }
+            for (int i = 0; i < number_of_triangles; i++) {
+                container->addFigure(read_bin_object(fin, new Triangle()));
+            }
+            for (int i = 0; i < number_of_rectangles; i++) {
+                container->addFigure(read_bin_object(fin, new Rectangle()));
+            }
+            for (int i = 0; i < number_of_ellipses; i++) {
+                container->addFigure(read_bin_object(fin, new Ellipse()));
+            }
 
             fin.close();
         } catch (char err) { // обробка виключних ситуацій
             cout << err << endl;
             return nullptr;
         }
-
         return container;
     }
 
-    template <class T>
-    void read_bin_object(ifstream &fin, int numberOfFigures, FiguresContainer &container) {
-        for (int i = 0; i < numberOfFigures; i++) {
-            T tmp;
-            fin.read((char*) &tmp, sizeof(T));
-            auto f = new T(tmp);
-            container.addFigure(f);
-        }
+//    template <class T, typename = std::enable_if<std::is_base_of<Figure, T>::value>>
+    Figure* read_bin_object(ifstream &fin, Figure* figure) {
+//        T tmp;
+//        tmp.deserialize(fin);
+//        T* figure = new T(tmp);
+//        T* figure;
+//        figure -> deserialize(fin);
+//        T* copy = new T(*figure);
+        figure->deserialize(fin);
+        return figure;
     }
 
     FiguresContainer* read_txt() { // зчитування даних з текстового файлу
@@ -819,7 +918,7 @@ void add_rectangles(FiguresContainer* figuresContainer) {
 }
 
 void add_ellipses(FiguresContainer* figuresContainer) {
-    for (int i = 0; i < number_of_triangles; i++) {
+    for (int i = 0; i < number_of_ellipses; i++) {
         figuresContainer->addFigure(create_ellipse());
     }
 }
@@ -827,16 +926,46 @@ void add_ellipses(FiguresContainer* figuresContainer) {
 
 // TODO remove
 void dev_main() {
-    Point *point = new Point(2, 1.5);
-    Round *round = new Round(*point, "my round", 2.5);
+    auto point = new Point(2, 1.5);
+    auto round = new Round(point, "my round", 2.5);
+
+    // serialize point
+    ofstream fout;
+    fout.open("/tmp/point.bin", ios::binary | ios::out);
+    point->serialize(fout);
+    fout.close();
+
+    ifstream fin;
+    fin.open("/tmp/point.bin", ios::binary | ios::in);
+
+    auto deser_point = new Point();
+    deser_point->deserialize(fin);
+    fin.close();
+
+    cout << "Deser point = " << *deser_point << endl;
+
 
     auto a = new Point(40, 20);
     auto b = new Point(60, 40);
     auto c = new Point(80, 20);
-    Triangle *triangle = new Triangle(*a, *b, *c, "my triangle");
+    auto triangle = new Triangle(a, b, c, "my triangle");
 
-    Rectangle *rectangle = new Rectangle(*point, "my rectangle", 4, 2.5);
-    Ellipse *ellipse = new Ellipse(*point, "my ellipse", 4, 2.5);
+
+    Rectangle *rectangle = new Rectangle(point, "my rectangle", 4, 2.5);
+    Ellipse *ellipse = new Ellipse(point, "my ellipse", 4, 2.5);
+
+    // serialize Round
+    fout.open("/tmp/round.bin", ios::binary | ios::out);
+    round->serialize(fout);
+    fout.close();
+
+    fin.open("/tmp/round.bin", ios::binary | ios::in);
+
+    auto deser_round = new Round();
+    deser_round->deserialize(fin);
+    fin.close();
+
+    cout << "Deser round = " << *deser_round << endl;
 
     auto * container = new FiguresContainer(4);
     container->addFigure(round);
@@ -879,6 +1008,13 @@ void dev_main() {
     cout << container->getAverageX<int>() << endl;
     cout << endl;
 
+    auto round_copy = new Round(*round);
+    delete round;
+    cout << "Round copy: " << endl;
+
+    cout << *round_copy << endl;
+
+
 
     try {
         round->setRadius_1(0);
@@ -893,13 +1029,13 @@ void dev_main() {
     }
 
     try {
-        new Rectangle(*point, "my rectangle", -4, 2.5);
+        new Rectangle(point, "my rectangle", -4, 2.5);
     } catch (const InvalidParamException& e) {
         cout << e.getMessage() << endl;
     }
 
 
-    delete(round);
+    delete(round_copy);
     delete(point);
     delete(triangle);
     delete(a);
