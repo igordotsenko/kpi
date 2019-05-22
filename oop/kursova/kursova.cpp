@@ -6,7 +6,6 @@
 
 using namespace std;
 
-// TODO update to be 10 in total
 unsigned int number_of_rounds = 3;
 unsigned int number_of_triangles = 3;
 unsigned int number_of_rectangles = 2;
@@ -93,8 +92,14 @@ public: // публічні поля та методи
     }
 
     friend ostream &operator<<(ostream &os, const Point &point) {
-        os << "(" << point.x << ", " << point.y << ")";
+        os << "( " << point.x << " , " << point.y << " )";
         return os;
+    }
+
+    friend istream &operator>>(istream &is, Point &point) {
+        string brace, delim, brace2;
+        is >> brace >> point.x >> delim >> point.y >> brace2;
+        return is;
     }
 };
 
@@ -102,7 +107,7 @@ public: // публічні поля та методи
 // TODO add comments
 class Figure : public Serializable {
 private:
-    Point* center = nullptr; // агрегаця
+    Point* center; // агрегаця
     string name;
 
 protected:
@@ -120,13 +125,16 @@ protected:
     }
 
 public:
-    Figure(Point* center, const string &name) : center(center), name(name) {}
+    Figure(Point* center, const string &name) {
+        string newName = string(name);
+        std::replace(newName.begin(), newName.end(), ' ', '_');
+        this->name = newName;
+        this->center = center;
+    }
 
     Figure() {}
 
     Figure(Figure& anotherFigure) {
-        // TODO resolve
-//        delete this->center;
         this->name = anotherFigure.name;
         this->center = new Point(*anotherFigure.center);
     }
@@ -146,14 +154,24 @@ public:
     virtual double getSquare() const = 0;
 
     virtual void describe_basic_params(ostream &os) const {
-        os << "name: " << name << "; center = " << *center << "; square = " << getSquare();
+        os << "name= " << name << " center= " << *center << " square= " << getSquare() << " ";
     }
 
+    virtual void read_basic_params(istream &is) {
+        string name, center, square, squareValue;
+        auto newCenter = new Point();
+        is >> name >> this->name >> center >> *newCenter >> square >> squareValue;
+        this->center = newCenter;
+    }
+
+    // TODO remove?
     virtual string describe_basic_params() const {
         stringstream ss;
         describe_basic_params(ss);
         return ss.str();
     }
+
+    virtual void read_specific_params(istream &is) = 0;
 
     virtual void describe_specific_params(ostream &os) const = 0;
 
@@ -164,27 +182,15 @@ public:
     }
 
     void serialize(ofstream &fout) override {
-        fout.write((char*) this, sizeof(Figure));
+        fout.write((char*) &name, sizeof(string));
         center->serialize(fout);
     }
 
     void deserialize(ifstream &fin) override {
-        fin.read((char*) this, sizeof(Figure));
+        fin.read((char*) &name, sizeof(string));
         center = new Point();
         center->deserialize(fin);
     }
-
-//    void serialize(ofstream &fout) override {
-//        Serializable::serialize(fout);
-//        center->serialize(fout);
-//    }
-//
-//    void deserialize(ifstream &fin) override {
-//        Serializable::deserialize(fin);
-//        center = new Point();
-//        center->deserialize(fin);
-//    }
-
 
     const Point &getCenter() const {
         return *center;
@@ -203,14 +209,15 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, const Figure &figure) {
-
-        // TODO remove
-        cout << &figure << endl;
-        cout << &figure << endl;
         figure.describe_basic_params(os);
-        os << "; ";
         figure.describe_specific_params(os);
         return os;
+    }
+
+    friend istream &operator>>(istream &is, Figure& figure) {
+        figure.read_basic_params(is);
+        figure.read_specific_params(is);
+        return is;
     }
 };
 
@@ -230,7 +237,7 @@ public:
     Triangle(Point* a, Point* b, Point* c, const string &name) :
         Figure(compute_center(*a, *b, *c), name), a(a), b(b), c(c) {}
 
-    Triangle(): a(nullptr), b(nullptr), c(nullptr) {}
+    Triangle() {}
 
     Triangle(Triangle& anotherTriangle) : Figure(anotherTriangle) {
             this->a = anotherTriangle.a;
@@ -261,12 +268,22 @@ public:
     }
 
     void describe_specific_params(ostream &os) const override {
-        os << "Vertex A = " << *a << "; Vertex B = " << *b << "; Vertex C = " << *c;
+        os << "Vertex_A= " << *a << " Vertex_B= " << *b << " Vertex_C= " << *c;
+    }
+
+    void read_specific_params(istream &is) override {
+        string vert_a, vert_b, vert_c;
+        auto newA = new Point();
+        auto newB = new Point();
+        auto newC = new Point();
+        is >> vert_a >> *newA >> vert_b >> *newB >> vert_c >> *newC;
+        this->a = newA;
+        this->b = newB;
+        this->c = newC;
     }
 
 
     void serialize(ofstream &fout) override {
-//        fout.write((char*) this, sizeof(Triangle));
         Figure::serialize(fout);
         a->serialize(fout);
         b->serialize(fout);
@@ -274,7 +291,6 @@ public:
     }
 
     void deserialize(ifstream &fin) override {
-//        fin.read((char*) this, sizeof(Figure));
         Figure::deserialize(fin);
         a = new Point();
         b = new Point();
@@ -283,27 +299,6 @@ public:
         b->deserialize(fin);
         c->deserialize(fin);
     }
-
-//    void serialize(ofstream &fout) override {
-//        Figure::serialize(fout);
-//        // TODO delete prev points
-//        a->serialize(fout);
-//        b->serialize(fout);
-//        c->serialize(fout);
-//    }
-//
-//    void deserialize(ifstream &fin) override {
-//        Figure::deserialize(fin);
-//        delete a;
-//        delete b;
-//        delete c;
-//        a = new Point();
-//        b = new Point();
-//        c = new Point();
-//        a->deserialize(fin);
-//        b->deserialize(fin);
-//        c->deserialize(fin);
-//    }
 
     const Point &getA() const {
         return *a;
@@ -361,7 +356,12 @@ public:
     }
 
     void describe_specific_params(ostream &os) const override {
-        os << "Side A length: " << a_length << "; side B length: " << b_length << ";";
+        os << "Side_A_length= " << a_length << " Side_B_length= " << b_length;
+    }
+
+    void read_specific_params(istream &is) override {
+        string side_a, side_b;
+        is >> side_a >> this->a_length >> side_b >> this->b_length;
     }
 
     void serialize(ofstream &fout) override {
@@ -375,16 +375,6 @@ public:
         fin.read((char*) &a_length, sizeof(double));
         fin.read((char*) &b_length, sizeof(double));
     }
-
-//    void serialize(ofstream &fout) override {
-//        Figure::serialize(fout);
-//        Serializable<Rectangle>::serialize(fout);
-//    }
-//
-//    void deserialize(ifstream &fin) override {
-//        Figure::deserialize(fin);
-//        Serializable<Rectangle>::deserialize(fin);
-//    }
 
     double getA_length() const {
         return a_length;
@@ -436,7 +426,12 @@ public:
     }
 
     void describe_specific_params(ostream &os) const override {
-        os << "Radius = " << radius_1 << "; Radius 2 = " << radius_2;
+        os << "Radius= " << radius_1 << " Radius_2= " << radius_2;
+    }
+
+    void read_specific_params(istream &is) override {
+        string radius, radius2;
+        is >> radius >> this->radius_1 >> radius2 >> this->radius_2;
     }
 
     void serialize(ofstream &fout) override {
@@ -450,16 +445,6 @@ public:
         fin.read((char*) &radius_1, sizeof(double));
         fin.read((char*) &radius_2, sizeof(double));
     }
-
-//    void serialize(ofstream &fout) override {
-//        Figure::serialize(fout);
-//        Serializable<Ellipse>::serialize(fout);
-//    }
-//
-//    void deserialize(ifstream &fin) override {
-//        Figure::deserialize(fin);
-//        Serializable<Ellipse>::deserialize(fin);
-//    }
 
     double getRadius_1() const {
         return radius_1;
@@ -491,31 +476,20 @@ public:
 
 
     void describe_specific_params(ostream &os) const override {
-        os << "Radius = " << getRadius_1();
+        os << "Radius= " << getRadius_1();
+    }
+
+    void read_specific_params(istream &is) override {
+        string radius;
+        double radius_value;
+        is >> radius >> radius_value;
+        this->setRadius(radius_value);
     }
 
     void setRadius(double radius) {
         setRadius_1(radius);
         setRadius_2(radius);
     }
-
-    void setRadius_1(double radius_1) override {
-        setRadius(radius_1);
-    }
-
-    void setRadius_2(double radius_2) override {
-        setRadius(radius_2);
-    }
-
-//    void serialize(ofstream &fout) override {
-//        Ellipse::serialize(fout);
-//        Serializable<Round>::serialize(fout);
-//    }
-//
-//    void deserialize(ifstream &fin) override {
-//        Ellipse::deserialize(fin);
-//        Serializable<Round>::deserialize(fin);
-//    }
 };
 
 
@@ -566,21 +540,6 @@ public:
         }
         return xSum / currentSize;
     }
-
-    // TODO try to implement
-//    template <class T>
-//    const vector<Figure*> *find_by_value(T value, bool (*search_function)(T)) {
-//        auto found = new vector<Figure*>();
-//        found->reserve(total_number_of_figures);
-//
-//        for (int i = 0; i < currentSize; i++) {
-//            Figure* figure = (*figures)[i];
-//            if (search_function(value)) {
-//                found->push_back(figure);
-//            }
-//        }
-//        return found;
-//    }
 
     const vector<Figure*> *find_by_value(double value) {
         auto found = new vector<Figure*>();
@@ -655,7 +614,9 @@ const string create_name() {
     string name;
 
     cout << "Enter Figure Name: ";
-    cin >> name;
+    cin.ignore();
+    getline(cin, name);
+    std::replace(name.begin(), name.end(), ' ', '_');
 
     return name;
 }
@@ -847,22 +808,8 @@ public:
                 throw "File cannot be opened";
             }
 
-            // TODO move to write methods to classes
-            int current_index = 0;
-            for (int i = 0; i < number_of_rounds; i++) {
-                write_round(fout, dynamic_cast<Round&>(container[current_index++]));
-            }
-
-            for (int i = 0; i < number_of_triangles; i++) {
-                write_triangle(fout, dynamic_cast<Triangle&>(container[current_index++]));
-            }
-
-            for (int i = 0; i < number_of_rectangles; i++) {
-                write_rectangle(fout, dynamic_cast<Rectangle&>(container[current_index++]));
-            }
-
-            for (int i = 0; i < number_of_ellipses; i++) {
-                write_ellipse(fout, dynamic_cast<Ellipse&>(container[current_index++]));
+            for ( int i = 0; i < container.getSize(); i++) {
+                fout << container[i] << endl;
             }
 
             fout.close();
@@ -901,11 +848,7 @@ public:
             }
             container = new FiguresContainer(total_number_of_figures);
             for (int i = 0; i < number_of_rounds; i++) {
-                Round* round = new Round();
-//                cout << "before deser" << *round << endl;
-                round->deserialize(fin);
-                cout << "deser = " << *round << endl;
-                container->addFigure(round);
+                container->addFigure(read_bin_object(fin, new Round()));
             }
             for (int i = 0; i < number_of_triangles; i++) {
                 container->addFigure(read_bin_object(fin, new Triangle()));
@@ -925,14 +868,7 @@ public:
         return container;
     }
 
-//    template <class T, typename = std::enable_if<std::is_base_of<Figure, T>::value>>
     Figure* read_bin_object(ifstream &fin, Figure* figure) {
-//        T tmp;
-//        tmp.deserialize(fin);
-//        T* figure = new T(tmp);
-//        T* figure;
-//        figure -> deserialize(fin);
-//        T* copy = new T(*figure);
         figure->deserialize(fin);
         return figure;
     }
@@ -949,19 +885,24 @@ public:
         }
         auto * container = new FiguresContainer(total_number_of_figures);
         for (int i = 0; i < number_of_rounds; i++) {
-            container->addFigure(read_round(fin));
+            container->addFigure(read_txt_figure(fin, new Round));
         }
         for (int i = 0; i < number_of_triangles; i++) {
-            container->addFigure(read_triangle(fin));
+            container->addFigure(read_txt_figure(fin, new Triangle()));
         }
         for (int i = 0; i < number_of_rectangles; i++) {
-            container->addFigure(read_rectangle(fin));
+            container->addFigure(read_txt_figure(fin, new Rectangle()));
         }
         for (int i = 0; i < number_of_ellipses; i++) {
-            container->addFigure(read_ellipse(fin));
+            container->addFigure(read_txt_figure(fin, new Ellipse()));
         }
 
         return container;
+    }
+
+    Figure* read_txt_figure(ifstream& fin, Figure* figure) {
+        fin >> *figure;
+        return figure;
     }
 };
 
@@ -1010,6 +951,19 @@ void dev_main() {
 
     cout << "Deser point = " << *deser_point << endl;
 
+    fout.open("/tmp/point.txt");
+    fout << *point;
+    fout.close();
+
+    fin.open("/tmp/point.txt");
+
+    auto txt_point = new Point();
+    fin >> *txt_point;
+    fin.close();
+
+    cout << "TXT Point = " << *txt_point << endl;
+
+
 
     auto a = new Point(40, 20);
     auto b = new Point(60, 40);
@@ -1038,6 +992,17 @@ void dev_main() {
     cout << "Deser round = " << *deser_round << endl;
     cout << "Deser round square = " << deser_round->getSquare() << endl;
     fin.close();
+
+    fout.open("/tmp/rext.txt");
+    fout << *triangle;
+    fout.close();
+
+    auto txt_triangle = new Triangle();
+    fin.open("/tmp/rext.txt");
+    fin >> *txt_triangle;
+    cout << "TXT Triangle: " << *txt_triangle << endl;
+
+
 
 
     auto * container = new FiguresContainer(4);
