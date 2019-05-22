@@ -347,10 +347,10 @@ public:
 };
 
 // Move to FiguresContainer?
-unsigned int number_of_rounds = 2;
-unsigned int number_of_triangles = 1;
-unsigned int number_of_rectangles = 2;
-unsigned int number_of_ellipses = 1;
+unsigned int number_of_rounds = 3;
+unsigned int number_of_triangles = 2;
+unsigned int number_of_rectangles = 3;
+unsigned int number_of_ellipses = 2;
 unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
 
 class FiguresContainer {
@@ -819,7 +819,7 @@ void add_rectangles(FiguresContainer* figuresContainer) {
 }
 
 void add_ellipses(FiguresContainer* figuresContainer) {
-    for (int i = 0; i < number_of_triangles; i++) {
+    for (int i = 0; i < number_of_ellipses; i++) {
         figuresContainer->addFigure(create_ellipse());
     }
 }
