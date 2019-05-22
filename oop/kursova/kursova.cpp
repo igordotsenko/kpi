@@ -119,11 +119,6 @@ protected:
         }
     }
 
-    virtual void write_to_stream(ostream &os) const {
-        describe_basic_params(os);
-        describe_basic_params(os);
-    }
-
 public:
     Figure(Point* center, const string &name) {
         string newName = string(name);
@@ -162,13 +157,6 @@ public:
         auto newCenter = new Point();
         is >> name >> this->name >> center >> *newCenter >> square >> squareValue;
         this->center = newCenter;
-    }
-
-    // TODO remove?
-    virtual string describe_basic_params() const {
-        stringstream ss;
-        describe_basic_params(ss);
-        return ss.str();
     }
 
     virtual void read_specific_params(istream &is) = 0;
@@ -664,10 +652,10 @@ Rectangle* create_rectangle() {
             Point* center = create_point();
 
             cout << "Enter Rectangle side A length:" << endl;
-            double length_a = read_input<double>();
+            auto length_a = read_input<double>();
 
             cout << "Enter Rectangle side B length:" << endl;
-            double length_b = read_input<double>();
+            auto length_b = read_input<double>();
 
             return new Rectangle(center, create_name(), length_a, length_b);
         } catch (InvalidParamException& e) {
@@ -683,10 +671,10 @@ Ellipse* create_ellipse() {
             Point* center = create_point();
 
             cout << "Enter Ellipse Radius 1:" << endl;
-            double radius_1 = read_input<double>();
+            auto radius_1 = read_input<double>();
 
             cout << "Enter Ellipse Radius 2:" << endl;
-            double radius_2 = read_input<double>();
+            auto radius_2 = read_input<double>();
 
             return new Ellipse(center, create_name(), radius_1, radius_2);
         } catch (InvalidParamException& e) {
@@ -700,104 +688,15 @@ class FileHandler {
     string binFile = "figures.bin";
 
 private:
-    // Write Operations
-    // TODO move to classes
-    void write_point(ofstream& fout, const Point& point) {
-        fout << point.getX() << endl;
-        fout << point.getY() << endl;
+    Figure* read_bin_object(ifstream &fin, Figure* figure) {
+        figure->deserialize(fin);
+        return figure;
     }
 
-    void write_round(ofstream& fout, Round& round) {
-        fout << round.getName() << endl;
-        write_point(fout, round.getCenter());
-        fout << round.getRadius_1() << endl;
+    Figure* read_txt_figure(ifstream& fin, Figure* figure) {
+        fin >> *figure;
+        return figure;
     }
-
-    void write_triangle(ofstream& fout, Triangle& triangle) {
-        fout << triangle.getName() << endl;
-        write_point(fout, triangle.getA());
-        write_point(fout, triangle.getB());
-        write_point(fout, triangle.getC());
-    }
-
-    void write_rectangle(ofstream& fout, Rectangle& rectangle) {
-        fout << rectangle.getName() << endl;
-        write_point(fout, rectangle.getCenter());
-        fout << rectangle.getA_length() << endl;
-        fout << rectangle.getB_length() << endl;
-    }
-
-    void write_ellipse(ofstream& fout, Ellipse& ellipse) {
-        fout << ellipse.getName() << endl;
-        write_point(fout, ellipse.getCenter());
-        fout << ellipse.getRadius_1() << endl;
-        fout << ellipse.getRadius_2() << endl;
-    }
-
-    // Read operations
-    // TODO maybe should return reference here?
-    Point* read_point(ifstream& fin) {
-        double x;
-        double y;
-
-        fin >> x;
-        fin >> y;
-
-        return new Point(x, y);
-    }
-
-    Round* read_round(ifstream& fin) {
-        string name;
-        double radius;
-
-        fin >> name;
-        Point* center = read_point(fin);
-        fin >> radius;
-
-        return new Round(center, name, radius);
-    }
-
-    Triangle* read_triangle(ifstream& fin) {
-        string name;
-        fin >> name;
-
-        auto a = read_point(fin);
-        auto b = read_point(fin);
-        auto c = read_point(fin);
-
-        return new Triangle(a, b, c, name);
-    }
-
-    Rectangle* read_rectangle(ifstream& fin) {
-        string name;
-        fin >> name;
-
-        auto center = read_point(fin);
-
-        double a_len;
-        fin >> a_len;
-
-        double b_len;
-        fin >> b_len;
-
-        return new Rectangle(center, name, a_len, b_len);
-    }
-
-    Ellipse* read_ellipse(ifstream& fin) {
-        string name;
-        fin >> name;
-
-        auto center = read_point(fin);
-
-        double rad_1;
-        fin >> rad_1;
-
-        double rad_2;
-        fin >> rad_2;
-
-        return new Ellipse(center, name, rad_1, rad_2);
-    }
-
 
 public:
     void write_txt(FiguresContainer &container) { // запис даних у текстовий файл
@@ -868,11 +767,6 @@ public:
         return container;
     }
 
-    Figure* read_bin_object(ifstream &fin, Figure* figure) {
-        figure->deserialize(fin);
-        return figure;
-    }
-
     FiguresContainer* read_txt() { // зчитування даних з текстового файлу
         ifstream fin;
         try {
@@ -898,11 +792,6 @@ public:
         }
 
         return container;
-    }
-
-    Figure* read_txt_figure(ifstream& fin, Figure* figure) {
-        fin >> *figure;
-        return figure;
     }
 };
 
