@@ -54,13 +54,7 @@ private: // приватні поля та методи
 public: // публічні поля та методи
     Point(double x, double y) : x(x), y(y) {}
 
-    Point() : Serializable() {
-
-    }
-
-    Point(Point& anotherPoint) {
-        this->x = anotherPoint.x;
-        this->y = anotherPoint.y;
+    Point() {
     }
 
     bool contains_value(double value) {
@@ -128,11 +122,6 @@ public:
     }
 
     Figure() {}
-
-    Figure(Figure& anotherFigure) {
-        this->name = anotherFigure.name;
-        this->center = new Point(*anotherFigure.center);
-    }
 
     virtual ~Figure() {
         delete center;
@@ -227,11 +216,11 @@ public:
 
     Triangle() {}
 
-    Triangle(Triangle& anotherTriangle) : Figure(anotherTriangle) {
-            this->a = anotherTriangle.a;
-            this->b = anotherTriangle.b;
-            this->c = anotherTriangle.c;
-    }
+//    Triangle(Triangle& anotherTriangle) : Figure(anotherTriangle) {
+//            this->a = anotherTriangle.a;
+//            this->b = anotherTriangle.b;
+//            this->c = anotherTriangle.c;
+//    }
 
     virtual ~Triangle() {
         delete a;
@@ -328,12 +317,12 @@ public:
 
     Rectangle() {}
 
-    Rectangle(Rectangle& anotherRectangle) : Figure(anotherRectangle) {
-        validate_positive(anotherRectangle.a_length, "Rectangle side length");
-        validate_positive(anotherRectangle.b_length, "Rectangle side length");
-        this->a_length = anotherRectangle.a_length;
-        this->b_length = anotherRectangle.b_length;
-    }
+//    Rectangle(Rectangle& anotherRectangle) : Figure(anotherRectangle) {
+//        validate_positive(anotherRectangle.a_length, "Rectangle side length");
+//        validate_positive(anotherRectangle.b_length, "Rectangle side length");
+//        this->a_length = anotherRectangle.a_length;
+//        this->b_length = anotherRectangle.b_length;
+//    }
 
     bool contains_value(double value) override {
         return Figure::contains_value(value) || a_length == value || b_length == value;
@@ -398,13 +387,6 @@ public:
 
     Ellipse() {}
 
-    Ellipse(Ellipse& anotherEllipse) : Figure(anotherEllipse) {
-        this->radius_1 = anotherEllipse.radius_1;
-        this->radius_2 = anotherEllipse.radius_2;
-        validate_positive(radius_1, "radius");
-        validate_positive(radius_2, "radius");
-    }
-
     virtual bool contains_value(double value) {
         return Figure::contains_value(value) || radius_1 == value || radius_2 == value;
     }
@@ -458,7 +440,7 @@ class Round : public Ellipse { // успадкування
 public:
     Round(Point* center, const string &name, double radius) : Ellipse(center, name, radius, radius) {}
 
-    Round(Round& anotherRound) : Ellipse(anotherRound) {}
+//    Round(Round& anotherRound) : Ellipse(anotherRound) {}
 
     Round() : Ellipse() {}
 
@@ -555,9 +537,9 @@ public:
         return found;
     }
 
-    Figure &operator[](unsigned long index) {
-        if (index > currentSize) {
-            throw "Index is larger than number of existing figures";
+    Figure &operator[](int index) {
+        if (index > currentSize || index < 0) {
+            throw "Index is larger than number of existing figures or less than 0";
         }
         return * (figures->at(index));
     }
@@ -821,157 +803,157 @@ void add_ellipses(FiguresContainer* figuresContainer) {
 
 
 // TODO remove
-void dev_main() {
-    auto point = new Point(2, 1.5);
-    auto round = new Round(point, "my round", 2.5);
-
-    // serialize point
-    ofstream fout;
-    fout.open("/tmp/point.bin", ios::binary | ios::out);
-    point->serialize(fout);
-    fout.close();
-
-    ifstream fin;
-    fin.open("/tmp/point.bin", ios::binary | ios::in);
-
-    auto deser_point = new Point();
-    deser_point->deserialize(fin);
-    fin.close();
-
-    cout << "Deser point = " << *deser_point << endl;
-
-    fout.open("/tmp/point.txt");
-    fout << *point;
-    fout.close();
-
-    fin.open("/tmp/point.txt");
-
-    auto txt_point = new Point();
-    fin >> *txt_point;
-    fin.close();
-
-    cout << "TXT Point = " << *txt_point << endl;
-
-
-
-    auto a = new Point(40, 20);
-    auto b = new Point(60, 40);
-    auto c = new Point(80, 20);
-    auto triangle = new Triangle(a, b, c, "my triangle");
-
-
-    Rectangle *rectangle = new Rectangle(point, "my rectangle", 4, 2.5);
-    Ellipse *ellipse = new Ellipse(point, "my ellipse", 4, 2.5);
-
-    // serialize Round
-    fout.open("/tmp/round.bin", ios::binary | ios::out);
-    round->serialize(fout);
-    round = new Round(point, "new round", 42);;
-    round->serialize(fout);
-    fout.close();
-
-    fin.open("/tmp/round.bin", ios::binary | ios::in);
-
-    auto deser_round = new Round();
-    deser_round->deserialize(fin);
-    cout << "Deser round = " << *deser_round << endl;
-    cout << "Deser round square = " << deser_round->getSquare() << endl;
-    deser_round = new Round();
-    deser_round->deserialize(fin);
-    cout << "Deser round = " << *deser_round << endl;
-    cout << "Deser round square = " << deser_round->getSquare() << endl;
-    fin.close();
-
-    fout.open("/tmp/rext.txt");
-    fout << *triangle;
-    fout.close();
-
-    auto txt_triangle = new Triangle();
-    fin.open("/tmp/rext.txt");
-    fin >> *txt_triangle;
-    cout << "TXT Triangle: " << *txt_triangle << endl;
-
-
-
-
-    auto * container = new FiguresContainer(4);
-    container->addFigure(round);
-    container->addFigure(triangle);
-    container->addFigure(rectangle);
-    container->addFigure(ellipse);
-
-
-    cout << "Just figures: " << endl;
-    cout << endl;
-
-    cout << *point << endl;
-    cout << *round << endl;
-    cout << *triangle << endl;
-    cout << *rectangle << endl;
-    cout << *ellipse << endl;
-    cout << endl;
-
-    cout << "Container figures: " << endl;
-    cout << *container << endl;
-    cout << endl;
-
-    cout << "Figure by index: " << endl;
-    cout << (*container)[1] << endl;
-    cout << endl;
-
-    cout << "Average square double " << endl;
-    cout << container->getAverageSquare<double>() << endl;
-    cout << endl;
-
-    cout << "Average square long " << endl;
-    cout << container->getAverageSquare<long>() << endl;
-    cout << endl;
-
-    cout << "Average X double" << endl;
-    cout << container->getAverageX<double>() << endl;
-    cout << endl;
-
-    cout << "Average X int" << endl;
-    cout << container->getAverageX<int>() << endl;
-    cout << endl;
-
-    auto round_copy = new Round(*round);
-    delete round;
-    cout << "Round copy: " << endl;
-
-    cout << *round_copy << endl;
-
-
-
-    try {
-        round->setRadius_1(0);
-    } catch (const InvalidParamException& e) {
-        cout << e.getMessage() << endl;
-    }
-
-    try {
-        (*container)[100];
-    } catch (const char* msg) {
-        cout << msg << endl;
-    }
-
-    try {
-        new Rectangle(point, "my rectangle", -4, 2.5);
-    } catch (const InvalidParamException& e) {
-        cout << e.getMessage() << endl;
-    }
-
-
-    delete(round_copy);
-    delete(point);
-    delete(triangle);
-    delete(a);
-    delete(b);
-    delete(c);
-    delete(rectangle);
-    delete(ellipse);
-    delete(container);
-}
+//void dev_main() {
+//    auto point = new Point(2, 1.5);
+//    auto round = new Round(point, "my round", 2.5);
+//
+//    // serialize point
+//    ofstream fout;
+//    fout.open("/tmp/point.bin", ios::binary | ios::out);
+//    point->serialize(fout);
+//    fout.close();
+//
+//    ifstream fin;
+//    fin.open("/tmp/point.bin", ios::binary | ios::in);
+//
+//    auto deser_point = new Point();
+//    deser_point->deserialize(fin);
+//    fin.close();
+//
+//    cout << "Deser point = " << *deser_point << endl;
+//
+//    fout.open("/tmp/point.txt");
+//    fout << *point;
+//    fout.close();
+//
+//    fin.open("/tmp/point.txt");
+//
+//    auto txt_point = new Point();
+//    fin >> *txt_point;
+//    fin.close();
+//
+//    cout << "TXT Point = " << *txt_point << endl;
+//
+//
+//
+//    auto a = new Point(40, 20);
+//    auto b = new Point(60, 40);
+//    auto c = new Point(80, 20);
+//    auto triangle = new Triangle(a, b, c, "my triangle");
+//
+//
+//    Rectangle *rectangle = new Rectangle(point, "my rectangle", 4, 2.5);
+//    Ellipse *ellipse = new Ellipse(point, "my ellipse", 4, 2.5);
+//
+//    // serialize Round
+//    fout.open("/tmp/round.bin", ios::binary | ios::out);
+//    round->serialize(fout);
+//    round = new Round(point, "new round", 42);;
+//    round->serialize(fout);
+//    fout.close();
+//
+//    fin.open("/tmp/round.bin", ios::binary | ios::in);
+//
+//    auto deser_round = new Round();
+//    deser_round->deserialize(fin);
+//    cout << "Deser round = " << *deser_round << endl;
+//    cout << "Deser round square = " << deser_round->getSquare() << endl;
+//    deser_round = new Round();
+//    deser_round->deserialize(fin);
+//    cout << "Deser round = " << *deser_round << endl;
+//    cout << "Deser round square = " << deser_round->getSquare() << endl;
+//    fin.close();
+//
+//    fout.open("/tmp/rext.txt");
+//    fout << *triangle;
+//    fout.close();
+//
+//    auto txt_triangle = new Triangle();
+//    fin.open("/tmp/rext.txt");
+//    fin >> *txt_triangle;
+//    cout << "TXT Triangle: " << *txt_triangle << endl;
+//
+//
+//
+//
+//    auto * container = new FiguresContainer(4);
+//    container->addFigure(round);
+//    container->addFigure(triangle);
+//    container->addFigure(rectangle);
+//    container->addFigure(ellipse);
+//
+//
+//    cout << "Just figures: " << endl;
+//    cout << endl;
+//
+//    cout << *point << endl;
+//    cout << *round << endl;
+//    cout << *triangle << endl;
+//    cout << *rectangle << endl;
+//    cout << *ellipse << endl;
+//    cout << endl;
+//
+//    cout << "Container figures: " << endl;
+//    cout << *container << endl;
+//    cout << endl;
+//
+//    cout << "Figure by index: " << endl;
+//    cout << (*container)[1] << endl;
+//    cout << endl;
+//
+//    cout << "Average square double " << endl;
+//    cout << container->getAverageSquare<double>() << endl;
+//    cout << endl;
+//
+//    cout << "Average square long " << endl;
+//    cout << container->getAverageSquare<long>() << endl;
+//    cout << endl;
+//
+//    cout << "Average X double" << endl;
+//    cout << container->getAverageX<double>() << endl;
+//    cout << endl;
+//
+//    cout << "Average X int" << endl;
+//    cout << container->getAverageX<int>() << endl;
+//    cout << endl;
+//
+//    auto round_copy = new Round(*round);
+//    delete round;
+//    cout << "Round copy: " << endl;
+//
+//    cout << *round_copy << endl;
+//
+//
+//
+//    try {
+//        round->setRadius_1(0);
+//    } catch (const InvalidParamException& e) {
+//        cout << e.getMessage() << endl;
+//    }
+//
+//    try {
+//        (*container)[100];
+//    } catch (const char* msg) {
+//        cout << msg << endl;
+//    }
+//
+//    try {
+//        new Rectangle(point, "my rectangle", -4, 2.5);
+//    } catch (const InvalidParamException& e) {
+//        cout << e.getMessage() << endl;
+//    }
+//
+//
+//    delete(round_copy);
+//    delete(point);
+//    delete(triangle);
+//    delete(a);
+//    delete(b);
+//    delete(c);
+//    delete(rectangle);
+//    delete(ellipse);
+//    delete(container);
+//}
 
 template <class T>
 void find_and_print(FiguresContainer* container) {
@@ -1026,7 +1008,7 @@ FiguresContainer* read(FileHandler& fileHandler, FiguresContainer* existingConta
 
 void search(FiguresContainer* container) {
     cout << "Enter 1 to search by number: " << endl;
-    cout << "Enter 2 to search for string: " << endl;
+    cout << "Enter 2 to search by string: " << endl;
     int key = read_input<int>();
     if (key == 1) {
         find_and_print<double>(container);
