@@ -11,7 +11,8 @@ void showlist(std::vector<double> g) {
 }
 
 int main() {
-    auto function = new Function(1, 6, 0.5, 5.5, 0.25);
+//    auto function = new Function(1, 6, 0.5, 5.5, 0.25);
+    auto function = new Function();
     cout << "Single value: " << function->getValue(1) << endl;
 
     auto values = function->getAllValues();
@@ -21,4 +22,8 @@ int main() {
     cout << "S2: " << function -> calculate_s2() << endl;
 
     function->print_rnd();
+    function -> print();
+
+
+//    printf("░");
 }

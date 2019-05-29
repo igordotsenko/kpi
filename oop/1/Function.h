@@ -11,6 +11,7 @@ using namespace std;
 class Function {
         public:
             static constexpr double delta = 0.04;
+            static constexpr int A = 65;
 
     Function(double a, double b, double x1, double x2, double dx);
             Function();
@@ -21,6 +22,7 @@ class Function {
             double calculate_s1();
             double calculate_s2();
             void print_rnd();
+            void print();
 
 
 

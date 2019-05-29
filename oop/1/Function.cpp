@@ -11,7 +11,7 @@ std::random_device Function::rd;
 std::mt19937 Function::rng(rd());
 
 Function::Function(double a, double b, double x1, double x2, double dx) : a(a), b(b), x1(x1), x2(x2), dx(dx) {}
-Function::Function() : a(1), b(6), x1(0.5), x2(5.5), dx(0.25) {}
+Function::Function() : Function(1, 6, 0.5, 5.5, 0.25) {}
 
 double Function::getValue(double x) {
     if (x >= 2) {
@@ -111,4 +111,35 @@ void Function::print_rnd() {
         printf("│%-10d│%-10.2f│\n", i, rnd[i]);
     }
     printf("└%s┴%s┘\n", line, line);
+}
+
+void Function::print() {
+    vector<double>* values = getAllValues();
+    int n = getNumberOfValues();
+    double max = values->at(0);
+    double min = values->at(0);
+
+    for (int i = 1; i < n; i++) {
+        double value = values->at(i);
+        if (value < min) {
+            min = value;
+        } else if (value > max) {
+            max = value;
+        }
+    }
+
+    int transformed[n];
+    for (int i = 0; i < n; i++) {
+        transformed[i] = (A * (values->at(i)-min)/(max-min));
+    }
+
+    for (int i = 0; i < n; i++) {
+        int t = transformed[i];
+        for (int j = 0; j < t; j++) {
+            cout << "░";
+        }
+        cout << endl;
+    }
+
+    delete values;
 }
