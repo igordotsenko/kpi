@@ -4,28 +4,23 @@
 #include <stdlib.h>
 #include <cstdlib>
 #include <list>
+#include <random>
 
 using namespace std;
 
 class Function {
         public:
-            static const int X_PRECISION = 3;
-            static const int VALUE_PRECISION = 6;
-            static const int TAB_SPACING_INTERVAL = 1;
-            static const int TAB_TOTAL_SPACES_PER_CELL_COUNT = 2;
-            static const int CELL_EXTRA_SPACE = 2; // 2 is for potential dot and minus symbols
-            static const int X_CELL_CHARACTERS_COUNT = X_PRECISION + TAB_TOTAL_SPACES_PER_CELL_COUNT + CELL_EXTRA_SPACE;
-            static const int VALUE_CELL_CHARACTERS_COUNT = VALUE_PRECISION + TAB_TOTAL_SPACES_PER_CELL_COUNT + CELL_EXTRA_SPACE;
-            static const std::string X_CELL_HEADER;
-            static const std::string VALUE_CELL_HEADER;
+            static constexpr double delta = 0.04;
 
-            Function(double a, double b, double x1, double x2, double dx);
+    Function(double a, double b, double x1, double x2, double dx);
             Function();
 
             double getValue(double x);
-            vector<double> getAllValues();
+            vector<double>* getAllValues();
             void tab();
+            double calculate_s1();
             double calculate_s2();
+            void print_rnd();
 
 
 
@@ -35,6 +30,8 @@ class Function {
             double x1;
             double x2;
             double dx;
+            static std::random_device rd;
+            static std::mt19937 rng;
 
             int getNumberOfValues();
             double getX(int index);
@@ -42,7 +39,7 @@ class Function {
             void printTabLine(double x, double value);
             void printTabFooter();
             void printTabLineSeparator(int cell_characters_total_count);
-            double calculate_s2(vector<double> values);
+            double calculate_s2(vector<double>& values);
 };
 
 #endif //UNTITLED_FUNCTION_H

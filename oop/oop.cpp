@@ -11,11 +11,14 @@ void showlist(std::vector<double> g) {
 }
 
 int main() {
-    auto function = new Function(1, 6, 0, 6, 0.25);
+    auto function = new Function(1, 6, 0.5, 5.5, 0.25);
     cout << "Single value: " << function->getValue(1) << endl;
 
     auto values = function->getAllValues();
     function->tab();
 
-    cout << function -> calculate_s2() << endl;
+    cout << "S1: " << function -> calculate_s1() << endl;
+    cout << "S2: " << function -> calculate_s2() << endl;
+
+    function->print_rnd();
 }

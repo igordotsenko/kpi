@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12.3)
 project(untitled)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_COMPILER "/Library/Developer/CommandLineTools/usr/bin/g++")
 
 add_executable(1 osnovy/1semestr/first.cpp)
 add_executable(2 osnovy/1semestr/second.cpp)

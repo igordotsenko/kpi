@@ -5,42 +5,41 @@
 #include "Function.h"
 #include <iomanip>
 #include <sstream>
+#include <random>
 
-const std::string Function::X_CELL_HEADER = "x";
-const std::string Function::VALUE_CELL_HEADER = "f(x)";
+std::random_device Function::rd;
+std::mt19937 Function::rng(rd());
 
 Function::Function(double a, double b, double x1, double x2, double dx) : a(a), b(b), x1(x1), x2(x2), dx(dx) {}
 Function::Function() : a(1), b(6), x1(0.5), x2(5.5), dx(0.25) {}
 
 double Function::getValue(double x) {
-//    cout << "x = " << x << endl;
     if (x >= 2) {
-//        cout << "result = " << -1*a * x*x - b << endl;
         return -1*a * x*x - b;
     } else {
-//        cout << "result = " << (x-b)/x << endl;
         return (x-b)/x;
     }
 }
 
-vector<double> Function::getAllValues() {
+vector<double>* Function::getAllValues() {
     int numberOfValues = getNumberOfValues();
-    auto values = *new vector<double>((unsigned long) numberOfValues);
+    auto values = new vector<double>();
+    values->reserve(numberOfValues);
     for (int i = 0; i < numberOfValues; i++) {
-        values[i] = getValue(getX(i));
+        values->push_back(getValue(getX(i)));
     }
     return values;
 }
 
 void Function::tab() {
-    printTabHeader();
-
     int numberOfValues = getNumberOfValues();
+    printf("┌─────┬──────────┐\n");
+    printf("│  x  │   f(x)   │\n");
     for (int i = 0; i < numberOfValues; i++) {
         double x = getX(i);
-        printTabLine(x, getValue(x));
+        printf("│%-5.2f│%-10.5g│\n", x, getValue(x));
     }
-    printTabFooter();
+    printf("└─────┴──────────┘\n");
 }
 
 int Function::getNumberOfValues() {
@@ -51,59 +50,7 @@ double Function::getX(int index) {
     return x1+dx*index;
 }
 
-void Function::printTabHeader() {
-    cout << "┌";
-    printTabLineSeparator(X_CELL_CHARACTERS_COUNT);
-    cout << "┬";
-    printTabLineSeparator(VALUE_CELL_CHARACTERS_COUNT);
-    cout << "┐" << endl;
-
-    unsigned long left_x_spaces = (X_CELL_CHARACTERS_COUNT - X_CELL_HEADER.length()) / 2;
-    unsigned long left_value_spaces = (VALUE_CELL_CHARACTERS_COUNT - VALUE_CELL_HEADER.length()) / 2;
-
-    unsigned long right_x_spaces = X_CELL_HEADER.length() % 2 == 0 ? left_x_spaces+1 : left_x_spaces;
-    unsigned long right_value_spaces = VALUE_CELL_HEADER.length() % 2 == 0 ? left_value_spaces : left_value_spaces+1;
-
-    cout << "│" << std::string(left_x_spaces, ' ') << X_CELL_HEADER <<  std::string(right_x_spaces, ' ') << "│";
-    cout << std::string(left_value_spaces, ' ') << VALUE_CELL_HEADER <<  std::string(right_value_spaces, ' ') << "│"
-    << endl;
-
-}
-
-void Function::printTabLine(double x, double value) {
-    std::ostringstream x_sting_stream;
-    x_sting_stream << "│" << std::string(TAB_SPACING_INTERVAL, ' ')  << x;
-    std::string left_x_cell = x_sting_stream.str();
-    int a = X_CELL_CHARACTERS_COUNT;
-    int b = left_x_cell.length();
-    // NOTE: 2 is for stream additional symboles
-    // 1 is for "│" sign
-    unsigned long x_right_cell_spacing = (X_CELL_CHARACTERS_COUNT - (left_x_cell.length()-2)) + 1;
-
-    std::ostringstream value_sting_stream;
-    value_sting_stream <<  value << std::string(TAB_SPACING_INTERVAL, ' ') << "│";
-    std::string right_value_cell = value_sting_stream.str();
-    unsigned long value_right_cell_spacing = (VALUE_CELL_CHARACTERS_COUNT - (right_value_cell.length()-2)) + 1;
-
-    cout << left_x_cell <<  std::string(x_right_cell_spacing, ' ') << "│"
-    << std::string(value_right_cell_spacing, ' ') << right_value_cell << endl;
-}
-
-void Function::printTabFooter() {
-    cout << "└";
-    printTabLineSeparator(X_CELL_CHARACTERS_COUNT);
-    cout << "┴";
-    printTabLineSeparator(VALUE_CELL_CHARACTERS_COUNT);
-    cout << "┘" << endl;
-}
-
-void Function::printTabLineSeparator(int cell_characters_total_count) {
-    for (int i = 0; i < cell_characters_total_count; i++) {
-        cout << "─";
-    }
-}
-
-double Function::calculate_s2(vector<double> values) {
+double Function::calculate_s2(vector<double>& values) {
     int negative_numbers_count = 0;
     double negative_numbers_sum = 0;
 
@@ -115,10 +62,53 @@ double Function::calculate_s2(vector<double> values) {
          }
     }
 
-    // TODO note: need to skip -inf value
     return negative_numbers_count > 0 ? negative_numbers_sum / negative_numbers_count : 0;
 }
 
+double Function::calculate_s1() {
+    vector<double>* values = getAllValues();
+    double min = values->at(0);
+    for (int i = 2; i < values->size(); i += 2) {
+        double value = values->at(i);
+        if (value < min) {
+            min = value;
+        }
+    }
+    delete values;
+    return min;
+}
+
 double Function::calculate_s2() {
-    return calculate_s2(getAllValues());
+    vector<double>* values = getAllValues();
+    double s2 = calculate_s2(*values);
+    delete(values);
+    return s2;
+}
+
+void Function::print_rnd() {
+    int n = getNumberOfValues();
+    double rnd[n];
+    double s1 = calculate_s1();
+    double s2 = calculate_s2();
+    double max = s1 > s2 ? s1 : s2;
+    double min = max == s1 ? s2 : s1;
+    double step = abs(max)*delta;
+
+    int number_of_steps = (int)(abs(max-min)/step);
+    std::uniform_int_distribution<int> uni(0, number_of_steps);
+    for (int i = 0; i < n; i++) {
+        int random = uni(rng);
+        double rnd_el = min + random*step;
+        rnd[i] = rnd_el;
+    }
+
+    char line[]= "──────────";
+    printf("┌%s┬%s┐\n", line, line);
+    printf("│%-10s│%-10.2f│\n", "s1", s1);
+    printf("│%-10s│%-10.2f│\n", "s2", s2);
+    printf("│%s│%s│\n", line, line);
+    for (int i = 0; i < n; i++) {
+        printf("│%-10d│%-10.2f│\n", i, rnd[i]);
+    }
+    printf("└%s┴%s┘\n", line, line);
 }
