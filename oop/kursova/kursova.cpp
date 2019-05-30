@@ -1070,7 +1070,7 @@ void menu() {
         cout << " -----------------------------------" << endl;
         cout << "| Enter 5 to search data ->         |" << endl;
         cout << " -----------------------------------" << endl;
-        cout << "| Enter 0 to exit ->                |" << endl;
+        cout << "| Enter 0 to quit ->                |" << endl;
         cout << " -----------------------------------" << endl;
         cout << "Make your choice -> ";
         key = read_input<int>();

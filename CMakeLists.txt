@@ -22,6 +22,7 @@ add_executable(os_2 os/os_2.c)
 add_executable(oop oop/oop.cpp oop/1/Function.cpp)
 add_executable(oop_kursova oop/kusr_examp/marina.cpp oop/kursova/kursova.cpp )
 add_executable(oop_test oop/kusr_examp/test.cpp)
+add_executable(oop_2 oop/2/lab_2.cpp oop/2/Date.cpp oop/2/Enterprise.cpp oop/2/IOProcessor.cpp)
 
 
 #add_executable(6_test osnovy/1semestr/six_example.cpp)

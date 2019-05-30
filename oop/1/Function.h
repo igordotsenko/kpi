@@ -13,7 +13,7 @@ class Function {
             static constexpr double delta = 0.04;
             static constexpr int A = 65;
 
-    Function(double a, double b, double x1, double x2, double dx);
+            Function(double a, double b, double x1, double x2, double dx);
             Function();
 
             double getValue(double x);

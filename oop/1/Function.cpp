@@ -10,6 +10,7 @@
 std::random_device Function::rd;
 std::mt19937 Function::rng(rd());
 
+// TODO add lazy init
 Function::Function(double a, double b, double x1, double x2, double dx) : a(a), b(b), x1(x1), x2(x2), dx(dx) {}
 Function::Function() : Function(1, 6, 0.5, 5.5, 0.25) {}
 
