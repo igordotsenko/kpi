@@ -27,6 +27,10 @@ public:
     Date(int year, int month, int date);
     Date(Date& another);
 
+    int get_year() const;
+    int get_month() const;
+    int get_date() const;
+
     friend std::ostream &operator<<(std::ostream &os, const Date &date);
     operator char*();
 };

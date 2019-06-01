@@ -5,7 +5,7 @@
 #include "Date.h"
 
 std::ostream &operator<<(std::ostream &os, const Date &date) {
-    os << "year: " << date.year << " month: " << date.month << " date: " << date.date;
+    os << date.year << "/" << date.month << "/" << date.date;
     return os;
 }
 
@@ -25,11 +25,23 @@ Date::Date(Date& another) {
 
 Date::operator char*() {
     stringstream ss;
-    ss << year << "/" << month << "/" << date;
+    ss << *this;
 
     string s = ss.str();
     char* ar = new char [s.length()+1];
     strcpy(ar, s.c_str());
     return ar;
+}
+
+int Date::get_year() const {
+    return year;
+}
+
+int Date::get_month() const {
+    return month;
+}
+
+int Date::get_date() const {
+    return date;
 }
 
