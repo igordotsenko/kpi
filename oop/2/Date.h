@@ -9,6 +9,7 @@
 #include <ostream>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 
 
@@ -27,9 +28,14 @@ public:
     Date(int year, int month, int date);
     Date(Date& another);
 
+    Date();
+
     int get_year() const;
     int get_month() const;
     int get_date() const;
+
+    void serialize(ofstream &fout);
+    void deserialize(ifstream &fin);
 
     friend std::ostream &operator<<(std::ostream &os, const Date &date);
     operator char*();

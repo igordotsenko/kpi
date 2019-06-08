@@ -670,10 +670,10 @@ class FileHandler {
     string binFile = "figures.bin";
 
 private:
-    Figure* read_bin_object(ifstream &fin, Figure* figure) {
-        figure->deserialize(fin);
-        return figure;
-    }
+        Figure* read_bin_object(ifstream &fin, Figure* figure) {
+            figure->deserialize(fin);
+            return figure;
+        }
 
     Figure* read_txt_figure(ifstream& fin, Figure* figure) {
         fin >> *figure;

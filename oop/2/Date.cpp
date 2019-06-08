@@ -22,6 +22,8 @@ Date::Date(Date& another) {
     this->date = another.date;
 }
 
+Date::Date() {}
+
 
 Date::operator char*() {
     stringstream ss;
@@ -43,5 +45,15 @@ int Date::get_month() const {
 
 int Date::get_date() const {
     return date;
+}
+
+
+void Date::serialize(ofstream& fout) {
+    fout.write((char*) this, sizeof(Date));
+}
+
+void Date::deserialize(ifstream& fin) {
+    fin.read((char*) this, sizeof(Date));
+
 }
 

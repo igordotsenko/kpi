@@ -32,6 +32,15 @@ add_executable(oop_3
         oop/2/Date.cpp
         oop/3/Showable.cpp
         )
+add_executable(oop_4
+        oop/4/Fuel.cpp
+        oop/4/Operator.cpp
+        oop/4/Checkout.cpp
+        oop/4/DailyBalance.cpp
+        oop/4/Container.h
+        oop/2/Date.cpp
+        oop/4/lab4.cpp
+        )
 
 
 
