@@ -12,6 +12,9 @@ unsigned int number_of_rectangles = 2;
 unsigned int number_of_ellipses = 2;
 unsigned int total_number_of_figures = number_of_rounds + number_of_triangles + number_of_rectangles + number_of_ellipses;
 
+unsigned int screen_height = 1080;
+unsigned int screen_width = 1920;
+
 
 class FigureOperationException {
 private:
@@ -36,17 +39,12 @@ public:
     ContainerIsFullException(const string &message) : FigureOperationException(message) {}
 };
 
-//template <class T>
-class Serializable {
+class OutOfScreenBoundException : public FigureOperationException {
 public:
-
-    Serializable() {}
-
-    virtual void serialize(ofstream &fout) = 0;
-    virtual void deserialize(ifstream &fin) = 0;
+    OutOfScreenBoundException(const string &message) : FigureOperationException(message) {}
 };
 
-class Point : public Serializable { // клас Точка
+class Point { // клас Точка
 private: // приватні поля та методи
     double x;
     double y;
@@ -77,11 +75,11 @@ public: // публічні поля та методи
         Point::y = y;
     }
 
-    void serialize(ofstream &fout) override {
+    void serialize(ofstream &fout) {
         fout.write((char*) this, sizeof(Point));
     }
 
-    void deserialize(ifstream &fin) override {
+    void deserialize(ifstream &fin) {
         fin.read((char*) this, sizeof(Point));
     }
 
@@ -98,8 +96,7 @@ public: // публічні поля та методи
 };
 
 
-// TODO add comments
-class Figure : public Serializable {
+class Figure {
 private:
     Point* center; // агрегаця
     string name;
@@ -113,8 +110,18 @@ protected:
         }
     }
 
+    void validate_screen_size(double param, string param_name) {
+        if (param > screen_height || param > screen_width) {
+            std::stringstream message;
+            message << param_name << " cannot be larger than screen size: " << screen_height << "x" << screen_width;
+            throw OutOfScreenBoundException(message.str());
+        }
+    }
+
 public:
     Figure(Point* center, const string &name) {
+        validate_screen_size(center->getX(), " center X coordinate");
+        validate_screen_size(center->getY(), " center Y coordinate");
         string newName = string(name);
         std::replace(newName.begin(), newName.end(), ' ', '_');
         this->name = newName;
@@ -131,7 +138,7 @@ public:
         return center->contains_value(value) || getSquare() == value;
     }
 
-    virtual bool contains_string(const string str) {
+    virtual bool contains_value(const string& str) {
         return name.find(str) != std::string::npos;
     }
 
@@ -158,12 +165,12 @@ public:
         return ss.str();
     }
 
-    void serialize(ofstream &fout) override {
+    virtual void serialize(ofstream &fout) {
         fout.write((char*) &name, sizeof(string));
         center->serialize(fout);
     }
 
-    void deserialize(ifstream &fin) override {
+    virtual void deserialize(ifstream &fin) {
         fin.read((char*) &name, sizeof(string));
         center = new Point();
         center->deserialize(fin);
@@ -174,6 +181,8 @@ public:
     }
 
     void setCenter(Point* center) {
+        validate_screen_size(center->getX(), " center X coordinate");
+        validate_screen_size(center->getY(), " center Y coordinate");
         Figure::center = center;
     }
 
@@ -212,15 +221,16 @@ private:
 
 public:
     Triangle(Point* a, Point* b, Point* c, const string &name) :
-        Figure(compute_center(*a, *b, *c), name), a(a), b(b), c(c) {}
+        Figure(compute_center(*a, *b, *c), name), a(a), b(b), c(c) {
+        validate_screen_size(a->getX(), " vert (a) X coordinate");
+        validate_screen_size(b->getX(), " vert (b) X coordinate");
+        validate_screen_size(c->getX(), " vert (c) X coordinate");
+        validate_screen_size(a->getY(), " vert (a) Y coordinate");
+        validate_screen_size(b->getY(), " vert (b) Y coordinate");
+        validate_screen_size(c->getY(), " vert (c) Y coordinate");
+    }
 
     Triangle() {}
-
-//    Triangle(Triangle& anotherTriangle) : Figure(anotherTriangle) {
-//            this->a = anotherTriangle.a;
-//            this->b = anotherTriangle.b;
-//            this->c = anotherTriangle.c;
-//    }
 
     virtual ~Triangle() {
         delete a;
@@ -282,6 +292,8 @@ public:
     }
 
     void setA(Point *a) {
+        validate_screen_size(a->getX(), " vert (a) X coordinate");
+        validate_screen_size(a->getY(), " vert (a) Y coordinate");
         Triangle::a = a;
     }
 
@@ -290,6 +302,8 @@ public:
     }
 
     void setB(Point *b) {
+        validate_screen_size(b->getX(), " vert (b) X coordinate");
+        validate_screen_size(b->getY(), " vert (b) Y coordinate");
         Triangle::b = b;
     }
 
@@ -298,6 +312,8 @@ public:
     }
 
     void setC(Point *c) {
+        validate_screen_size(c->getX(), " vert (c) X coordinate");
+        validate_screen_size(c->getY(), " vert (c) Y coordinate");
         Triangle::c = c;
     }
 };
@@ -311,18 +327,13 @@ public:
     Figure(center, name) {
         validate_positive(a_length, "Rectangle side length");
         validate_positive(b_length, "Rectangle side length");
+        validate_screen_size(a_length, "A length");
+        validate_screen_size(b_length, "B length");
         this->a_length = a_length;
         this->b_length = b_length;
     }
 
     Rectangle() {}
-
-//    Rectangle(Rectangle& anotherRectangle) : Figure(anotherRectangle) {
-//        validate_positive(anotherRectangle.a_length, "Rectangle side length");
-//        validate_positive(anotherRectangle.b_length, "Rectangle side length");
-//        this->a_length = anotherRectangle.a_length;
-//        this->b_length = anotherRectangle.b_length;
-//    }
 
     bool contains_value(double value) override {
         return Figure::contains_value(value) || a_length == value || b_length == value;
@@ -359,6 +370,7 @@ public:
 
     void setA_length(double a_length) {
         validate_positive(a_length, "Rectangle side length");
+        validate_screen_size(a_length, "A length");
         Rectangle::a_length = a_length;
     }
 
@@ -368,6 +380,7 @@ public:
 
     void setB_length(double b_length) {
         validate_positive(b_length, "Rectangle side length");
+        validate_screen_size(b_length, "B length");
         Rectangle::b_length = b_length;
     }
 };
@@ -381,6 +394,8 @@ public:
     Figure(center, name) {
         validate_positive(radius_1, "radius");
         validate_positive(radius_2, "radius");
+        validate_screen_size(radius_1, "Radius 1");
+        validate_screen_size(radius_2, "Radius 2");
         this->radius_1 = radius_1;
         this->radius_2 = radius_2;
     }
@@ -422,6 +437,7 @@ public:
 
     virtual void setRadius_1(double radius_1) {
         validate_positive(radius_1, "radius");
+        validate_screen_size(radius_1, "Radius 1");
         Ellipse::radius_1 = radius_1;
     }
 
@@ -431,6 +447,7 @@ public:
 
     virtual void setRadius_2(double radius_2) {
         validate_positive(radius_2, "radius");
+        validate_screen_size(radius_2, "Radius 2");
         Ellipse::radius_2 = radius_2;
     }
 };
@@ -439,9 +456,6 @@ class Round : public Ellipse { // успадкування
 
 public:
     Round(Point* center, const string &name, double radius) : Ellipse(center, name, radius, radius) {}
-
-//    Round(Round& anotherRound) : Ellipse(anotherRound) {}
-
     Round() : Ellipse() {}
 
 
@@ -480,33 +494,11 @@ public:
         delete figures;
     }
 
-
-    void addFigure(Figure *figure) {
-        if (currentSize == maxSize) {
-            throw ContainerIsFullException("Container is full and cannot accept new elements");
-        }
-        (*figures)[currentSize] = figure;
-        currentSize++;
-    }
-
-    int getSize() const {
-        return currentSize;
-    }
-
     template <class T>
-    T getAverageSquare() {
-        T squareSum = 0;
-        for (int i = 0; i < currentSize; i++) {
-            squareSum += figures->at(i)->getSquare();
-        }
-        return squareSum / currentSize;
-    }
-
-    template <class T>
-    T getAverageX() {
+    T get_average(T arr[]) {
         T xSum = 0;
         for (int i = 0; i < currentSize; i++) {
-            xSum += figures->at(i)->getCenter().getX();
+            xSum += arr[i];
         }
         return xSum / currentSize;
     }
@@ -530,7 +522,7 @@ public:
 
         for (int i = 0; i < currentSize; i++) {
             Figure* figure = (*figures)[i];
-            if (figure -> contains_string(value)) {
+            if (figure->contains_value(value)) {
                 found->push_back(figure);
             }
         }
@@ -545,10 +537,22 @@ public:
     }
 
     friend ostream &operator<<(ostream &os, FiguresContainer &container) {
-        for (int i = 0; i < container.getSize(); i++) {
+        for (int i = 0; i < *container; i++) {
             os << container[i] << endl;
         }
         return os;
+    }
+
+    friend void operator+=(FiguresContainer &container, Figure* figure) {
+        if (container.currentSize == container.maxSize) {
+            throw ContainerIsFullException("Container is full and cannot accept new elements");
+        }
+        (*container.figures)[container.currentSize] = figure;
+        container.currentSize++;
+    }
+
+    friend int operator*(FiguresContainer &container) {
+        return container.currentSize;
     }
 };
 
@@ -604,6 +608,8 @@ Round* create_round() {
             return new Round(center, create_name(), radius);
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        } catch (FigureOperationException& e) {
+            cout << "Error figure creation: " <<  e.getMessage() << ". Try again" << endl;
         }
     }
 }
@@ -623,6 +629,8 @@ Triangle* create_triangle() {
             return new Triangle(a, b, c, create_name());
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        } catch (FigureOperationException& e) {
+            cout << "Error figure creation: " <<  e.getMessage() << ". Try again" << endl;
         }
     }
 }
@@ -642,6 +650,8 @@ Rectangle* create_rectangle() {
             return new Rectangle(center, create_name(), length_a, length_b);
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        } catch (FigureOperationException& e) {
+            cout << "Error figure creation: " <<  e.getMessage() << ". Try again" << endl;
         }
     }
 }
@@ -661,6 +671,8 @@ Ellipse* create_ellipse() {
             return new Ellipse(center, create_name(), radius_1, radius_2);
         } catch (InvalidParamException& e) {
             cout << "Error on data input: " <<  e.getMessage() << ". Try again" << endl;
+        } catch (FigureOperationException& e) {
+            cout << "Error figure creation: " <<  e.getMessage() << ". Try again" << endl;
         }
     }
 }
@@ -689,7 +701,7 @@ public:
                 throw "File cannot be opened";
             }
 
-            for ( int i = 0; i < container.getSize(); i++) {
+            for ( int i = 0; i < *container; i++) {
                 fout << container[i] << endl;
             }
 
@@ -707,7 +719,7 @@ public:
             if (!fout) {
                 throw "File cannot be opened.";
             }
-            for (int i = 0; i < container.getSize(); i++) {
+            for (int i = 0; i < *container; i++) {
                 container[i].serialize(fout);
             }
 
@@ -729,16 +741,16 @@ public:
             }
             container = new FiguresContainer(total_number_of_figures);
             for (int i = 0; i < number_of_rounds; i++) {
-                container->addFigure(read_bin_object(fin, new Round()));
+                *container += read_bin_object(fin, new Round());
             }
             for (int i = 0; i < number_of_triangles; i++) {
-                container->addFigure(read_bin_object(fin, new Triangle()));
+                *container += read_bin_object(fin, new Triangle());
             }
             for (int i = 0; i < number_of_rectangles; i++) {
-                container->addFigure(read_bin_object(fin, new Rectangle()));
+                *container += read_bin_object(fin, new Rectangle());
             }
             for (int i = 0; i < number_of_ellipses; i++) {
-                container->addFigure(read_bin_object(fin, new Ellipse()));
+                *container += read_bin_object(fin, new Ellipse());
             }
 
             fin.close();
@@ -761,16 +773,16 @@ public:
         }
         auto * container = new FiguresContainer(total_number_of_figures);
         for (int i = 0; i < number_of_rounds; i++) {
-            container->addFigure(read_txt_figure(fin, new Round));
+            *container += read_txt_figure(fin, new Round);
         }
         for (int i = 0; i < number_of_triangles; i++) {
-            container->addFigure(read_txt_figure(fin, new Triangle()));
+            *container += read_txt_figure(fin, new Triangle());
         }
         for (int i = 0; i < number_of_rectangles; i++) {
-            container->addFigure(read_txt_figure(fin, new Rectangle()));
+            *container += read_txt_figure(fin, new Rectangle());
         }
         for (int i = 0; i < number_of_ellipses; i++) {
-            container->addFigure(read_txt_figure(fin, new Ellipse()));
+            *container += read_txt_figure(fin, new Ellipse());
         }
 
         return container;
@@ -779,25 +791,25 @@ public:
 
 void add_rounds(FiguresContainer* figuresContainer) {
     for (int i = 0; i < number_of_rounds; i++) {
-        figuresContainer->addFigure(create_round());
+        *figuresContainer += create_round();
     }
 }
 
 void add_triangles(FiguresContainer* figuresContainer) {
     for (int i = 0; i < number_of_triangles; i++) {
-        figuresContainer->addFigure(create_triangle());
+        *figuresContainer += create_triangle();
     }
 }
 
 void add_rectangles(FiguresContainer* figuresContainer) {
     for (int i = 0; i < number_of_rectangles; i++) {
-        figuresContainer->addFigure(create_rectangle());
+        *figuresContainer += create_rectangle();
     }
 }
 
 void add_ellipses(FiguresContainer* figuresContainer) {
     for (int i = 0; i < number_of_ellipses; i++) {
-        figuresContainer->addFigure(create_ellipse());
+        *figuresContainer += create_ellipse();
     }
 }
 
@@ -1023,7 +1035,7 @@ void print_table(FiguresContainer& container) { // виведення даних
     printf("|%-20s|%-30s|%-10s|%-80s|\n", "Figure name", "Center", "Square", "Additional params");
     printf("%s\n", line.c_str());
 
-    for (int i = 0; i < container.getSize(); i++) {
+    for (int i = 0; i < *container; i++) {
         Figure& figure = container[i];
         stringstream center;
         center << figure.getCenter();
@@ -1036,14 +1048,21 @@ void print_table(FiguresContainer& container) { // виведення даних
     }
 
     printf("\n\n");
-    line = string(94, '-');
+    line = string(63, '-');
     printf("%s\n", line.c_str());
-    printf("|%-30s|%-30s|%-30s|\n", "Average square (double)", "Average square (int)", "Average X");
+    printf("|%-30s|%-30s|\n", "Average square (double)", "Average X (int)");
     printf("%s\n", line.c_str());
-    printf("|%-30.2f|%-30d|%-30.2f|\n",
-            container.getAverageSquare<double>(),
-            container.getAverageSquare<int>(),
-            container.getAverageX<double>());
+
+    int x_coord[*container];
+    double sqr[*container];
+    for (int i = 0; i < *container; i++) {
+        x_coord[i] = container[i].getCenter().getX();
+        sqr[i] = container[i].getSquare();
+    }
+
+    printf("|%-30.2f|%-30d|\n",
+            container.get_average(sqr),
+            container.get_average(x_coord));
     printf("%s\n", line.c_str());
 }
 
